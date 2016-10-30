@@ -1,0 +1,177 @@
+#pragma once
+
+#include "demangle.hpp"
+
+#include <cstdint>
+#include <iostream>
+#include <vector>
+#include <tuple>
+
+namespace dbg_util {
+
+enum class operation {
+  DEFAULT_CONSTRUCTION,
+  VALUE_CONSTRUCTION,
+  COPY_CONSTRUCTION,
+  MOVE_CONSTRUCTION,
+  COPY_ASSIGNMENT,
+  MOVE_ASSIGNMENT,
+  DESTRUCTION,
+  SWAP,
+  EQUALS
+};
+std::ostream& operator<<(std::ostream& out, operation op) {
+  switch (op) {
+    case operation::DEFAULT_CONSTRUCTION: return out << "DEFAULT_CONSTRUCTION";
+    case operation::VALUE_CONSTRUCTION: return out << "VALUE_CONSTRUCTION";
+    case operation::COPY_CONSTRUCTION: return out << "COPY_CONSTRUCTION";
+    case operation::MOVE_CONSTRUCTION: return out << "MOVE_CONSTRUCTION";
+    case operation::COPY_ASSIGNMENT: return out << "COPY_ASSIGNMENT";
+    case operation::MOVE_ASSIGNMENT: return out << "MOVE_ASSIGNMENT";
+    case operation::DESTRUCTION: return out << "DESTRUCTION";
+    case operation::SWAP: return out << "SWAP";
+    case operation::EQUALS: return out << "EQUALS";
+  }
+}
+
+template <typename T>
+struct instrumented;
+
+template <typename>
+uint64_t current_id = 0;
+inline uint64_t get_id() { return current_id<void>++; }
+inline void reset_numbering() { current_id<void> = 0; }
+
+template <typename>
+std::vector<std::tuple<uint64_t, uint64_t, operation>> trace_ = {};
+
+inline auto& trace() { return trace_<void>; }
+template <typename T, typename U>
+inline void add_to_trace(instrumented<T> const& x, instrumented<U> const& y, operation op) {
+  trace().emplace_back(x.id, y.id, op);
+}
+template <typename T>
+inline void add_to_trace(instrumented<T> const& x, operation op) {
+  trace().emplace_back(x.id, -1, op);
+}
+inline void clear_trace() {
+  trace().clear();
+}
+using trace_type = std::decay_t<decltype(trace())>;
+template <typename... Tuples>
+auto tuples_to_trace(Tuples const&... ts) {
+  return trace_type{ts...};
+}
+template <typename... Tuples>
+bool trace_is(Tuples const&... ts) {
+  return trace() == tuples_to_trace(ts...);
+}
+
+void print_trace(std::ostream& o, trace_type const& t = trace()) {
+  using std::get;
+  for (auto const& line : t) {
+    if (get<1>(line) == static_cast<decltype(get<1>(line))>(-1)) {
+      o << "[trace]: " << get<2>(line) << " on " << get<0>(line) << "\n";
+    } else {
+      o << "[trace]: " << get<2>(line) << " between " << get<0>(line) << " and "
+        << get<1>(line) << "\n";
+    }
+  }
+}
+
+namespace detail {
+template <typename T, typename U>
+constexpr bool swap_is_noexcept(T& x, U& y) {
+  using std::swap;
+  return noexcept(swap(x, y));
+}
+
+}
+
+template <typename T>
+struct instrumented {
+  template <typename ValueType>
+  explicit instrumented(ValueType&& value)
+      : id(get_id())
+      , value(std::forward<T>(value)) {
+    add_to_trace(*this, operation::VALUE_CONSTRUCTION);
+  }
+  instrumented()
+      : id(get_id()) {
+    add_to_trace(*this, operation::DEFAULT_CONSTRUCTION);
+  }
+  instrumented(instrumented const& x)
+      : id(get_id())
+      , value(x.value) {
+    add_to_trace(*this, x, operation::COPY_CONSTRUCTION);
+  }
+  instrumented(instrumented&& x)
+      : id(get_id())
+      , value(std::move(x.value)) {
+    add_to_trace(*this, x, operation::MOVE_CONSTRUCTION);
+  }
+  instrumented& operator=(instrumented const& x) {
+    add_to_trace(*this, x, operation::COPY_ASSIGNMENT);
+    value = x.value;
+    return *this;
+  }
+  instrumented& operator=(instrumented&& x) {
+    add_to_trace(*this, x, operation::MOVE_ASSIGNMENT);
+    value = std::move(x.value);
+    return *this;
+  }
+  ~instrumented() {
+    try {
+      add_to_trace(*this, operation::DESTRUCTION);
+    } catch (...) {} // don't die if cerr somehow can't be written to.
+  }
+
+  friend std::ostream& operator<<(std::ostream& o, instrumented const& x) {
+    return o << demangle(typeid(x).name()) << "{" << x.id << ", "
+             << x.value << "}";
+  }
+
+  friend void swap(instrumented& x, instrumented& y) noexcept(
+      noexcept(detail::swap_is_noexcept(x.value, y.value))) {
+    using std::swap;
+    add_to_trace(x, y, operation::SWAP);
+    swap(x.value, y.value);
+  }
+
+  friend bool operator==(instrumented const& x, instrumented const& y) {
+    add_to_trace(x, y, operation::EQUALS);
+    return x.value == y.value;
+  }
+
+  uint64_t id;
+  T value;
+};
+
+template <typename T>
+auto make_instrumented(T&& x) {
+  return instrumented<std::decay_t<T>>{std::forward<T>(x)};
+}
+
+template <typename... Tuples>
+void assert_trace_is_and_clear_(std::string const& file,
+                               int line,
+                               Tuples const&... ts) {
+  if (!dbg_util::trace_is(ts...)) {
+    std::cerr << "Asstion assert_trace_is_and_clear() at " << file << ":"
+              << line << " falied.\n"
+              << "Trace:\n"
+              << "^^^^^^\n";
+    dbg_util::print_trace(std::cerr);
+    std::cerr << "Expected trace:\n"
+              << "^^^^^^^^^^^^^^^\n";
+    dbg_util::print_trace(std::cerr, dbg_util::tuples_to_trace(ts...));
+    exit(1);
+  }
+  dbg_util::clear_trace();
+}
+#define ASSERT_AND_CLEAR_TRACE_IS(...) \
+  ::dbg_util::assert_trace_is_and_clear_(          \
+      __FILE__, __LINE__, __VA_ARGS__)
+
+} /* dbg_util */
+

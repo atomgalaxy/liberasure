@@ -1,6 +1,5 @@
 # liberasure
 A no-dependencies C++ extensible type erasure library
-<<<<<<< HEAD
 
 ## LICENSE and OWNERSHIP
 This work is distributed under the terms of the Apache 2.0 licence, as described
@@ -15,5 +14,3 @@ longer claims ownership of the code.
 
 The code henceforth belongs to the CONTRIBUTORS as detailed in the Github
 history.
-=======
->>>>>>> c131146ff1b4ffa469398489b5775444432b86fd

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "type_erasure/type_erasure.hpp"
+#include "erasure/erasure.hpp"
 
 #include "debug/instrumented.hpp"
 
@@ -22,18 +22,18 @@
 #include <tuple>
 
 int main() {
-  using type_erasure::features::move_constructible;
-  using type_erasure::features::move_assignable;
-  using type_erasure::features::movable;
-  using type_erasure::features::copyable;
-  using type_erasure::features::copy_constructible;
-  using type_erasure::features::copy_assignable;
+  using erasure::features::move_constructible;
+  using erasure::features::move_assignable;
+  using erasure::features::movable;
+  using erasure::features::copyable;
+  using erasure::features::copy_constructible;
+  using erasure::features::copy_assignable;
 
-  using type_erasure::make_any;
+  using erasure::make_any;
   using std::make_unique;
   using std::make_tuple;
   using dbg_util::instrumented;
-  using type_erasure::any;
+  using erasure::any;
 
   {
     // movable does not require copyable

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#include "type_erasure/features/callable.hpp"
-#include "type_erasure/features/ostreamable.hpp"
-#include "type_erasure/features/less_than_comparable.hpp"
-#include "type_erasure/features/dereferencable.hpp"
-#include "type_erasure/features/regular.hpp"
-#include "type_erasure/features/value_equality_comparable.hpp"
+#include "erasure/features/callable.hpp"
+#include "erasure/features/ostreamable.hpp"
+#include "erasure/features/less_than_comparable.hpp"
+#include "erasure/features/dereferencable.hpp"
+#include "erasure/features/regular.hpp"
+#include "erasure/features/value_equality_comparable.hpp"
 
-#include "type_erasure/type_erasure.hpp"
+#include "erasure/erasure.hpp"
 #include "debug/unique_string.hpp"
 #include "debug/atom.hpp"
 #include "debug/instrumented.hpp"
@@ -34,8 +34,8 @@
 #include <cstdlib>
 
 int main() {
-  using namespace type_erasure;
-  using namespace type_erasure::features;
+  using namespace erasure;
+  using namespace erasure::features;
   using dbg_util::make_instrumented;
   using dbg_util::instrumented;
 
@@ -94,7 +94,7 @@ int main() {
     assert(target<decltype(x)>(rx));
     assert(rx == rx);  // rx's equals works
     std::cerr << "sizeof rx: " << sizeof(rx) << "\n";
-    std::cerr << "sizeof *rx.value: " << type_erasure::debug::model_size(rx)
+    std::cerr << "sizeof *rx.value: " << erasure::debug::model_size(rx)
               << "\n";
     std::cerr << "rx is string: "
               << (target<decltype(y)>(rx) ? "true" : "false") << "\n";
@@ -254,7 +254,7 @@ int main() {
     using a = atom<struct a_tag>;
     using b = atom<struct b_tag>;
     using const_visitable_by_ab =
-        type_erasure::features::visitable<int(meta::typelist<a, b> const&)>;
+        erasure::features::visitable<int(meta::typelist<a, b> const&)>;
     auto x = make_any<regular, const_visitable_by_ab>(a{});
     auto y = make_any<regular, const_visitable_by_ab>(b{});
     struct f_multifunction {

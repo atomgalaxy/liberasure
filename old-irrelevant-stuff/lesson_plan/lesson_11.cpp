@@ -53,7 +53,7 @@ void do_something_else() {
 }
 
 
-#include "../type_erasure/meta.hpp"
+#include "../erasure/meta.hpp"
 
 #include <cstddef>
 #include <vector>

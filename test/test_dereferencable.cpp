@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "type_erasure/features/dereferencable.hpp"
-#include "type_erasure/features/regular.hpp"
-#include "type_erasure/type_erasure.hpp"
+#include "erasure/features/dereferencable.hpp"
+#include "erasure/features/regular.hpp"
+#include "erasure/erasure.hpp"
 
 #include <memory>
 #include <tuple>
@@ -40,18 +40,18 @@ struct can_mutably_deref {
 };
 
 void test_const_dereferencable() {
-  using type_erasure::features::regular;
-  using type_erasure::features::const_dereferencable;
-  using type_erasure::make_any;
+  using erasure::features::regular;
+  using erasure::features::const_dereferencable;
+  using erasure::make_any;
 
   auto x = make_any<regular, const_dereferencable<int>>(can_const_deref{});
   assert(*x == 1);
 }
 
 void test_mutably_dereferencable() {
-  using type_erasure::features::regular;
-  using type_erasure::features::mutably_dereferencable;
-  using type_erasure::make_any;
+  using erasure::features::regular;
+  using erasure::features::mutably_dereferencable;
+  using erasure::make_any;
 
   auto x = make_any<regular, mutably_dereferencable<int>>(can_mutably_deref{});
   assert(*x == 1);

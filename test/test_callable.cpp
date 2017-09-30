@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "type_erasure/features/callable.hpp"
-#include "type_erasure/features/regular.hpp"
-#include "type_erasure/type_erasure.hpp"
+#include "erasure/features/callable.hpp"
+#include "erasure/features/regular.hpp"
+#include "erasure/erasure.hpp"
 
 #include <memory>
 #include <tuple>
@@ -43,12 +43,12 @@ struct can_mutably_call {
 };
 
 void test_const_callable() {
-  using type_erasure::features::regular;
-  using type_erasure::features::callable;
-  using type_erasure::features::copyable;
-  using type_erasure::features::buffer_size;
-  using type_erasure::make_any;
-  using type_erasure::make_any_like;
+  using erasure::features::regular;
+  using erasure::features::callable;
+  using erasure::features::copyable;
+  using erasure::features::buffer_size;
+  using erasure::make_any;
+  using erasure::make_any_like;
 
   auto x = make_any<regular,
                     callable<int()>,
@@ -62,9 +62,9 @@ void test_const_callable() {
 }
 
 void test_mutably_callable() {
-  using type_erasure::features::regular;
-  using type_erasure::features::mutably_callable;
-  using type_erasure::make_any;
+  using erasure::features::regular;
+  using erasure::features::mutably_callable;
+  using erasure::make_any;
 
   auto x =
       make_any<regular,

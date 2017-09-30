@@ -16,7 +16,7 @@
 
 #pragma once
 /**
- * @file type_erasure.hpp
+ * @file erasure.hpp
  * The general library for constructing type-erased types.
  *
  * INTRODUCTION
@@ -128,7 +128,7 @@
  * facilities in the BaseConcept, BaseModel and BaseInterface classes that are
  * passed to each object.
  *
- * All of these are in namespace `type_erasure::feature_support`.
+ * All of these are in namespace `erasure::feature_support`.
  *
  * #### For Concepts ####
  *
@@ -229,7 +229,7 @@
 #include <utility> // for std::move and std::forward
 
 
-namespace type_erasure {
+namespace erasure {
 
 namespace _1 {
 
@@ -600,7 +600,7 @@ struct interface_base {
    * implementations.
    */
 
-  /// Private. Should only be referenced by type_erasure::features::ifs.
+  /// Private. Should only be referenced by erasure::features::ifs.
   using _any_ifc_type = InterfaceSupport;
 };
 
@@ -1456,7 +1456,7 @@ using _1::concept_ptr;
 using _1::ifc_self_cast;
 using _1::ifc_concept_ptr;
 using _1::feature;
-} // end type_erasure::feature_support
+} // end erasure::feature_support
 
 // import all the names that the library exports
 
@@ -1486,4 +1486,4 @@ using _1::movable;
 
 namespace debug = _1::debug;
 
-} /* namespace type_erasure */
+} /* namespace erasure */

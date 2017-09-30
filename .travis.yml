@@ -6,8 +6,8 @@ compiler:
 addons:
   apt:
     packages:
-      cmake
-      boost
+      - cmake
+      - libboost-dev
 script:
   - cmake -GNinja
   - ninja

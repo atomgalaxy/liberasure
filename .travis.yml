@@ -6,8 +6,12 @@ compiler:
 addons:
   apt:
     packages:
+      - gcc-6
+      - g++-6
+      - clang-5
       - cmake
       - libboost-dev
+      - ninja
 script:
   - cmake -GNinja
   - ninja

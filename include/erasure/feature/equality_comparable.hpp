@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include "../type_erasure.hpp"
+#include "../erasure.hpp"
 
-namespace type_erasure {
+namespace erasure {
 namespace features {
 namespace equality_comparable_detail {
 
-namespace f = type_erasure::feature_support;
+namespace f = erasure::feature_support;
 struct equality_comparable : feature_support::feature {
   // concept
   template <typename C>

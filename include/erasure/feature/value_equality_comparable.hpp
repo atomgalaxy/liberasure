@@ -15,13 +15,13 @@
  */
 
 #pragma once
-#include "../type_erasure.hpp"
+#include "../erasure.hpp"
 
-namespace type_erasure {
+namespace erasure {
 namespace features {
 namespace value_equality_comparable_detail {
 
-namespace f = type_erasure::feature_support;
+namespace f = erasure::feature_support;
 
 template <typename T>
 struct value_equality_comparable : feature_support::feature {

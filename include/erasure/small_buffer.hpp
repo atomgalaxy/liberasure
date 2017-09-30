@@ -20,6 +20,8 @@
 #include <array>
 #include <cassert>
 
+namespace erasure {
+
 namespace ubuf {
 
 template <typename T>
@@ -178,5 +180,7 @@ struct small_buffer<0> {
 private:
   owner<char*> ptr;
 };
+
+}
 
 }

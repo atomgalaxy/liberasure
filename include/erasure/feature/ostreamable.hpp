@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include "../type_erasure.hpp"
+#include "../erasure.hpp"
 
 #include <iostream>
 
-namespace type_erasure {
+namespace erasure {
 namespace features {
 
 struct ostreamable : feature_support::feature {
@@ -45,4 +45,4 @@ struct ostreamable : feature_support::feature {
 };
 
 }  // features
-}  // type_erasure
+}  // erasure

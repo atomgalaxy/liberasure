@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "erasure/features/dereferencable.hpp"
-#include "erasure/features/regular.hpp"
+#include "erasure/feature/dereferencable.hpp"
+#include "erasure/feature/regular.hpp"
 #include "erasure/erasure.hpp"
 
 #include <memory>

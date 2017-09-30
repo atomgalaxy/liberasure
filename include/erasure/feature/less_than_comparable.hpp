@@ -16,14 +16,14 @@
 
 #pragma once
 
-#include "../type_erasure.hpp"
+#include "../erasure.hpp"
 
-namespace type_erasure {
+namespace erasure {
 namespace features {
 
 namespace detail {
 
-namespace fs = type_erasure::feature_support;
+namespace fs = erasure::feature_support;
 
 /** The weak-ordering version of less-than comparable. */
 struct less_than_comparable : feature_support::feature {
@@ -71,4 +71,4 @@ struct less_than_comparable : feature_support::feature {
 using detail::less_than_comparable;
 
 } // features
-} // type_erasure
+} // erasure

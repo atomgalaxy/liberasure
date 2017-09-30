@@ -41,6 +41,7 @@ endfunction(add_markdown)
 #  end function definitions  #
 ##############################
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 # BUILD TYPE DEFAULTING / PARSING
 # If the user specifies -DCMAKE_BUILD_TYPE=BuildType on the command line, take
@@ -99,42 +100,29 @@ include_directories(${Boost_INCLUDE_DIRS})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -g -flto")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=2" )
 
-# targets:
-add_markdown(lesson_plan.html
-             lesson_plan/lesson_plan.md
-             lesson_plan/codehilite.css)
-add_custom_target(lesson_plan ALL DEPENDS lesson_plan.html)
-#
+include_directories("${CMAKE_SOURCE_DIR}/include")
 include_directories("${CMAKE_SOURCE_DIR}")
 add_executable(type_erasure_example       examples/type_erasure_example.cpp)
-add_executable(comparisons_example        examples/comparisons_example.cpp)
-add_executable(lesson_02                  lectures/lesson_02.cpp)
-add_executable(hand_rolled_union          lectures/hand_rolled_union.cpp)
-add_executable(lesson_06                  lectures/lesson_06.cpp)
-add_executable(lesson_07                  lectures/lesson_07.cpp)
-add_executable(lesson_10                  lectures/lesson_10.cpp)
-add_executable(lesson_11                  lesson_plan/lesson_11.cpp)
-add_executable(mixin_fun                  lectures/mixin_fun.cpp)
-add_executable(add_to_ref                 lectures/add_to_ref.cpp)
 
 # movable test & negatives
-add_executable(test_type_erasure_movable  tests/test_type_erasure_movable.cpp)
+add_executable(test_type_erasure_movable  test/test_type_erasure_movable.cpp)
+add_executable(test_meta test/meta.cpp)
 add_test(NAME  test_type_erasure_movable COMMAND test_type_erasure_movable)
 assert_build_fails(TEST_NAME negative_test_copyable
-                   TARGET negative_test_copyable tests/test_type_erasure_movable.cpp
+                   TARGET negative_test_copyable test/test_type_erasure_movable.cpp
                    DEFINITIONS NOCOMPILE_COPYABLE_TEST
                    )
 assert_build_fails(TEST_NAME negative_test_movable
-                   TARGET negative_test_movable tests/test_type_erasure_movable.cpp
+                   TARGET negative_test_movable test/test_type_erasure_movable.cpp
                    DEFINITIONS NOCOMPILE_MOVABLE_TEST
                    )
 
 # dereferencable test
-add_executable(test_dereferencable        tests/test_dereferencable.cpp)
+add_executable(test_dereferencable        test/test_dereferencable.cpp)
 add_test(NAME  test_dereferencable COMMAND test_dereferencable)
 
 # callable test
-add_executable(test_callable              tests/test_callable.cpp)
+add_executable(test_callable              test/test_callable.cpp)
 add_test(NAME  test_callable COMMAND test_callable)
 
 add_test(NAME hand_rolled_union COMMAND hand_rolled_union)

@@ -19,6 +19,7 @@
 #include <type_traits>
 #include <utility>
 
+namespace erasure {
 namespace meta {
 
 /**
@@ -122,10 +123,6 @@ struct compose {
   template <typename... Args>
   using vararg = type<Args...>;
 };
-static_assert(!compose<not_, is_same>::type<int, int>{}, "");
-static_assert(compose<not_, compose<not_, is_same>::type>::type<int, int>{},
-              "");
-static_assert(compose<not_, not_>::type<std::true_type>{}, "");
 
 
 /** cons */
@@ -141,12 +138,6 @@ struct cons<T, typelist<Ts...>> {
 };
 template <typename T, typename Typelist=typelist<>>
 using cons_t = _t<cons<T, Typelist>>;
-
-static_assert(typelist<int>{} == cons_t<int> {},
-              "A cons with a single parameter should cons to an empty list.");
-static_assert(typelist<int, long, char>{} ==
-                  cons_t<int, cons_t<long, cons_t<char>>>{},
-              "Cons builds typelists correctly.");
 
 /** pair constructor */
 template <typename T, typename U>
@@ -191,10 +182,6 @@ struct take_1<typelist<>> {
 template <typename Typelist>
 using take_1_t = _t<take_1<Typelist>>;
 
-static_assert(typelist<int>{} == take_1_t<typelist<int>>{}, "");
-static_assert(typelist<int>{} == take_1_t<typelist<int, long, char>>{}, "");
-static_assert(typelist<>{} == take_1_t<typelist<>>{}, "");
-
 
 /** concatenate */
 template <typename... Typelists>
@@ -215,17 +202,6 @@ struct concatenate<typelist<Ts1...>, typelist<Ts2...>, Typelists...> {
 template <typename... Typelists>
 using concatenate_t = _t<concatenate<Typelists...>>;
 
-static_assert(typelist<>{} == concatenate_t<>{},
-              "Concatenation of no typelists is the unit for concatenation.");
-static_assert(typelist<>{} == concatenate_t<typelist<>, typelist<>>{},
-              "typelist<> is the unit for concatenation.");
-static_assert(typelist<int, long, char>{} ==
-                  concatenate_t<typelist<int>, typelist<long, char>>{},
-              "Concatenate concatenates.");
-static_assert(
-    typelist<int, long, char>{} ==
-        concatenate_t<typelist<int>, typelist<long>, typelist<char>>{},
-    "");
 
 /** flatten. */
 template <typename T>
@@ -637,6 +613,8 @@ static_assert(product_t<typelist<char, short>,
 } // detail
 
 /** INTERFACE LISTING */
+using detail::compose;
+
 using detail::concatenate;
 using detail::concatenate_t;
 
@@ -669,6 +647,9 @@ using detail::head_t;
 
 using detail::tail;
 using detail::tail_t;
+
+using detail::take_1;
+using detail::take_1_t;
 
 using detail::is_element;
 using detail::is_element_t;
@@ -719,3 +700,4 @@ using detail::is_typelist;
 using detail::print_type;
 
 } // meta
+} // erasure

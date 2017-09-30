@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "erasure/features/callable.hpp"
-#include "erasure/features/ostreamable.hpp"
-#include "erasure/features/less_than_comparable.hpp"
-#include "erasure/features/dereferencable.hpp"
-#include "erasure/features/regular.hpp"
-#include "erasure/features/value_equality_comparable.hpp"
+#include "erasure/feature/callable.hpp"
+#include "erasure/feature/ostreamable.hpp"
+#include "erasure/feature/less_than_comparable.hpp"
+#include "erasure/feature/dereferencable.hpp"
+#include "erasure/feature/regular.hpp"
+#include "erasure/feature/value_equality_comparable.hpp"
 
 #include "erasure/erasure.hpp"
 #include "debug/unique_string.hpp"

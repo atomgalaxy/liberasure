@@ -20,7 +20,7 @@
 
 #include "../meta.hpp"
 
-namespace type_erasure {
+namespace erasure {
 namespace features {
 inline namespace {
 namespace visitable_detail {
@@ -94,4 +94,4 @@ struct visitable<ReturnType(ParamTypeTypelists...)> {
 using visitable_detail::visitable;
 
 } // features
-} // type_erasure
+} // erasure

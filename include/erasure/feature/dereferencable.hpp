@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "../type_erasure.hpp"
+#include "../erasure.hpp"
 
-namespace type_erasure {
+namespace erasure {
 namespace features {
 
 template <typename ReturnType>
@@ -36,7 +36,7 @@ struct const_dereferencable : feature_support::feature {
   template <typename I>
   struct interface : I {
     ReturnType operator*() const {
-      namespace f = type_erasure::feature_support;
+      namespace f = erasure::feature_support;
       return f::ifc_concept_ptr(*this)->operator_const_dereference();
     }
   };
@@ -59,11 +59,11 @@ struct mutably_dereferencable : feature_support::feature {
   template <typename I>
   struct interface : I {
     ReturnType operator*() {
-      namespace f = type_erasure::feature_support;
+      namespace f = erasure::feature_support;
       return f::ifc_concept_ptr(*this)->operator_mutable_dereference();
     }
   };
 };
 
 }  // features
-}  // type_erasure
+}  // erasure

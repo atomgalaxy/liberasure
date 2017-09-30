@@ -15,9 +15,9 @@
  */
 
 #pragma once
-#include "../type_erasure.hpp"
+#include "../erasure.hpp"
 
-namespace type_erasure {
+namespace erasure {
 namespace features {
 namespace callable_detail {
 
@@ -106,4 +106,4 @@ using function = feature_support::typelist<buffer_size<BufferSize>,
                                            copy_constructible>;
 
 } // features
-} // type_erasure
+} // erasure

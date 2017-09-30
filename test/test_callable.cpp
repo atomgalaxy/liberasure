@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include "erasure/features/callable.hpp"
-#include "erasure/features/regular.hpp"
+#include "erasure/feature/callable.hpp"
+#include "erasure/feature/regular.hpp"
+
 #include "erasure/erasure.hpp"
 
 #include <memory>

@@ -10,7 +10,7 @@ addons:
     packages:
       - gcc-6
       - g++-6
-      - clang-5
+      - clang-5.0
       - cmake
       - libboost-dev
       - ninja

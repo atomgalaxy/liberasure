@@ -1,0 +1,14 @@
+dist: trusty
+language: cpp
+compiler:
+  - clang
+  - gcc
+addons:
+  apt:
+    packages:
+      cmake
+      boost
+script:
+  - cmake -GNinja
+  - ninja
+  - ninja test

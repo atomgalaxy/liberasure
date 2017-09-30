@@ -96,7 +96,8 @@ endif()
 # include the boost directories
 include_directories(${Boost_INCLUDE_DIRS})
 # enable c++14
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -ferror-limit=2 -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -g -flto")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=2" )
 
 # targets:
 add_markdown(lesson_plan.html

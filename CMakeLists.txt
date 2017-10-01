@@ -69,10 +69,8 @@ enable_testing()
 # completely standalone. It is, however, required to build the tests and the
 # lectures.
 #
-# TODO: enable building lectures only if Boost found.
-
 # add your boost location here in the list of globs, and it should find it
-FILE(GLOB BOOST_SEARCH_PATH "/usr/local/Cellar/boost/*")
+FILE(GLOB BOOST_SEARCH_PATH "/usr/local/Cellar/boost/*" "/usr/include/*")
 
 # make sure versions are sorted properly, so that later versions are ahead of
 # the previous ones...
@@ -80,11 +78,11 @@ LIST(SORT BOOST_SEARCH_PATH)
 LIST(REVERSE BOOST_SEARCH_PATH)
 
 message(STATUS "Looking for Boost in the default places...")
-find_package(Boost 1.57.0)
+find_package(Boost 1.54.0)
 if (NOT Boost_FOUND)
   foreach (BOOST_ROOT ${BOOST_SEARCH_PATH})
     message(STATUS "Looking for Boost in ${BOOST_ROOT}")
-    find_package(Boost 1.57.0)
+    find_package(Boost 1.54.0)
     if (Boost_FOUND)
       break()
     endif()

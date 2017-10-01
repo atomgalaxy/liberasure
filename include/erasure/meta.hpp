@@ -452,7 +452,7 @@ using intersection_t = _t<intersection<Set1, Set2>>;
 
 static_assert(typelist<char>{} ==
                   intersection_t<typelist<int, long, char>,
-                                 typelist<size_t, char, long long>>{},
+                                 typelist<std::size_t, char, long long>>{},
               "");
 static_assert(typelist<>{} ==
                   intersection_t<typelist<int>, typelist<char, unsigned>>{},

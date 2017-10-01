@@ -35,6 +35,7 @@ matrix:
             - llvm-toolchain-trusty-5.0
           packages:
             - clang-5.0
+            - libstdc++-6-dev
             - cmake
             - libboost-dev
       env:

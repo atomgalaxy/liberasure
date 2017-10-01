@@ -46,6 +46,6 @@ script:
   - export SRCDIR="$(pwd)"
   - mkdir ../build/
   - cd ../build/
-  - cmake -G "Unix Makefiles" "$SRCDIR"
-  - make
-  - make test
+  - cmake "$SRCDIR" -DCMAKE_VERBOSE_MAKEFILE=ON
+  - cmake --build
+  - ctest

@@ -12,7 +12,8 @@ matrix:
             - cmake
             - libboost-dev
       env:
-         - TOOLCHAIN="export CC=gcc-6 CXX=g++-6"
+        - TOOLCHAIN="export CC=gcc-6 CXX=g++-6
+        - CMAKE_CXX_FLAGS=-isystem=/usr/include/c++/6/
 
     - os: linux
       addons:
@@ -25,6 +26,7 @@ matrix:
             - libboost-dev
       env:
         - TOOLCHAIN="export CC=gcc-7 CXX=g++-7"
+        - CMAKE_CXX_FLAGS=-isystem=/usr/include/c++/6/
 
     - os: linux
       addons:
@@ -37,6 +39,7 @@ matrix:
             - libboost-dev
       env:
         - TOOLCHAIN="export CC=clang-5.0 CXX=clang++-5.0"
+        - CMAKE_CXX_FLAGS=-isystem=/usr/include/c++/6/
 
 before_install:
   - echo ${TOOLCHAIN} 

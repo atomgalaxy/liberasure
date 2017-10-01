@@ -109,9 +109,9 @@ before_install:
 
 script:
   - cd "${SRCDIR}"
-  - if [[ "${CXX%%+*}" == "clang" ]]; then export CMAKE_LTO=OFF; fi
+  - if [[ "${CXX%%+*}" == "clang" ]]; then echo Turning off LTO; export CMAKE_LTO=OFF; fi
   - mkdir ../build/
   - cd ../build/
-  - cmake "$SRCDIR" -DCMAKE_VERBOSE_MAKEFILE=ON
+  - cmake "$SRCDIR" -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_LTO=${CMAKE_LTO}
   - cmake --build .
   - ctest

@@ -47,5 +47,5 @@ script:
   - mkdir ../build/
   - cd ../build/
   - cmake "$SRCDIR" -DCMAKE_VERBOSE_MAKEFILE=ON
-  - cmake --build
+  - cmake --build .
   - ctest

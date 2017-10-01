@@ -1,5 +1,4 @@
 sudo: false
-language: cpp
 matrix:
   include:
     - os: linux
@@ -13,8 +12,7 @@ matrix:
             - libboost-dev
             - ninja
       env:
-        - CC=gcc-6
-        - CXX=g++-6"
+         - TOOLCHAIN="export CC=gcc-6 CXX=g++-6"
 
     - os: linux
       addons:
@@ -27,8 +25,7 @@ matrix:
             - libboost-dev
             - ninja
       env:
-        - CC=gcc-7
-        - CXX=g++-7"
+        - TOOLCHAIN="export CC=gcc-7 CXX=g++-7"
 
     - os: linux
       addons:
@@ -41,15 +38,16 @@ matrix:
             - libboost-dev
             - ninja
       env:
-        - CC=clang-5.0
-        - CXX=clang++-5.0"
+        - TOOLCHAIN="export CC=clang-5.0 CXX=clang++-5.0"
 
 before_install:
-  - echo "Matrix eval: ${CC} ${CXX}"
+  - echo ${TOOLCHAIN} 
+  - eval ${TOOLCHAIN}
 
 script:
   - export SRCDIR="$(pwd)"
-  - echo "$SRCDIR"
   - mkdir ../build/
   - cd ../build/
-  - cmake -G "Unix Makefiles" "$SRCDIR" && make && make test
+  - cmake -G "Unix Makefiles" "$SRCDIR"
+  - make
+  - make test

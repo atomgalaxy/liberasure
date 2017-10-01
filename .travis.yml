@@ -61,7 +61,8 @@ install:
   - ${CXX} --version
 
   # Dependencies required by the CI are installed in ${TRAVIS_BUILD_DIR}/deps/
-  - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
+  - export SRCDIR="$(pwd)"
+  - export DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
   - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
 
   # Install a recent CMake
@@ -117,8 +118,8 @@ before_install:
   - eval ${TOOLCHAIN}
 
 script:
+  - cd "${SRCDIR}"
   - if [[ "${CXX%%+*}" == "clang" ]]; then export CMAKE_LTO=OFF; fi
-  - export SRCDIR="$(pwd)"
   - mkdir ../build/
   - cd ../build/
   - cmake "$SRCDIR" -DCMAKE_VERBOSE_MAKEFILE=ON

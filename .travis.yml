@@ -42,6 +42,7 @@ matrix:
       env:
         - TOOLCHAIN="export CC=clang-5.0 CXX=clang++-5.0"
         - CMAKE_CXX_FLAGS="-isystem=/usr/include/c++/6/"
+        - CMAKE_LTO=OFF
 
 before_install:
   - echo ${TOOLCHAIN} 

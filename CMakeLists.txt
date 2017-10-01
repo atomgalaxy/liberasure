@@ -95,9 +95,14 @@ endif()
 # include the boost directories
 include_directories(${Boost_INCLUDE_DIRS})
 # enable c++14
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -g -flto")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -g ")
+
+if (NOT CMAKE_LTO MATCHES "OFF")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
+endif()
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=2" )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=2")
 endif()
 
 include_directories("${CMAKE_SOURCE_DIR}/include")

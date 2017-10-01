@@ -99,9 +99,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -g ")
 
 if (NOT CMAKE_LTO MATCHES "OFF")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
-  message(STATUS "Turning off -flto")
+  message(WARNING "Turning off -flto")
 else()
-  message(STATUS "LTO is on, CMAKE_LTO is ${CMAKE_LTO}")
+  message(WARNING "LTO is on, CMAKE_LTO is ${CMAKE_LTO}")
 endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")

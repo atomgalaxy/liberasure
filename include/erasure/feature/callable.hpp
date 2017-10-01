@@ -99,7 +99,7 @@ struct mutably_callable<Return(Args...)> : feature_support::feature {
  * The default size for the buffer for function is vtable_ptr + function
  * pointer + this state.
  */
-template <typename Signature, size_t BufferSize = 3 * sizeof(void*)>
+template <typename Signature, std::size_t BufferSize = 3 * sizeof(void*)>
 using function = feature_support::typelist<buffer_size<BufferSize>,
                                            callable<Signature>,
                                            move_constructible,

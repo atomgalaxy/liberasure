@@ -254,23 +254,23 @@ template <template <typename...> class F,
           typename... ExtraArgs>
 using map_t = _t<map<F, Typelist, ExtraArgs...>>;
 
-template <size_t I>
-using size_t_ = std::integral_constant<size_t, I>;
+template <std::size_t I>
+using size_t_ = std::integral_constant<std::size_t, I>;
 
-template <size_t N>
+template <std::size_t N>
 struct make_index_sequence {
   using seq = std::make_index_sequence<N>;
 
   template <typename IndexSequence>
   struct helper;
-  template <size_t... Is>
+  template <std::size_t... Is>
   struct helper<std::index_sequence<Is...>> {
       using type = typelist<size_t_<Is>...>;
   };
 
   using type = typename helper<seq>::type;
 };
-template <size_t N>
+template <std::size_t N>
 using make_index_sequence_t = _t<make_index_sequence<N>>;
 
 /**

@@ -70,7 +70,10 @@ enable_testing()
 # lectures.
 #
 # add your boost location here in the list of globs, and it should find it
-FILE(GLOB BOOST_SEARCH_PATH "/usr/local/Cellar/boost/*" "/usr/include/*")
+FILE(GLOB BOOST_SEARCH_PATH
+  "/usr/local/Cellar/boost/*"
+  "/usr/include/boost*"
+  "${TRAVIS_BUILD_DIR}/boost-*")
 
 # make sure versions are sorted properly, so that later versions are ahead of
 # the previous ones...

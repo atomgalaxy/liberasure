@@ -7,6 +7,7 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
+            - ppa:kzemek/boost
           packages:
             - g++-6
             - cmake
@@ -20,6 +21,7 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
+            - ppa:kzemek/boost
           packages:
             - g++-7
             - cmake
@@ -34,6 +36,7 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-5.0
+            - ppa:kzemek/boost
           packages:
             - clang-5.0
             - libstdc++-6-dev

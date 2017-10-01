@@ -87,6 +87,7 @@ install:
       elif [[ "${CXX}" == "clang++-3.8" ]]; then LLVM_VERSION="3.8.1";
       elif [[ "${CXX}" == "clang++-3.9" ]]; then LLVM_VERSION="3.9.1";
       elif [[ "${CXX}" == "clang++-4.0" ]]; then LLVM_VERSION="4.0.0";
+      elif [[ "${CXX}" == "clang++-5.0" ]]; then LLVM_VERSION="5.0.0";
       fi
 
       LLVM_URL="http://llvm.org/releases/${LLVM_VERSION}/llvm-${LLVM_VERSION}.src.tar.xz"

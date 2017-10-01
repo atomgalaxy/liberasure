@@ -11,7 +11,6 @@ matrix:
             - g++-6
             - cmake
             - libboost-dev
-            - ninja
       env:
          - TOOLCHAIN="export CC=gcc-6 CXX=g++-6"
 
@@ -24,7 +23,6 @@ matrix:
             - g++-7
             - cmake
             - libboost-dev
-            - ninja
       env:
         - TOOLCHAIN="export CC=gcc-7 CXX=g++-7"
 
@@ -37,7 +35,6 @@ matrix:
             - clang-5.0
             - cmake
             - libboost-dev
-            - ninja
       env:
         - TOOLCHAIN="export CC=clang-5.0 CXX=clang++-5.0"
 

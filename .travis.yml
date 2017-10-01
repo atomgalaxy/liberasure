@@ -13,7 +13,7 @@ matrix:
             - libboost-dev
       env:
         - TOOLCHAIN="export CC=gcc-6 CXX=g++-6
-        - CMAKE_CXX_FLAGS=-isystem=/usr/include/c++/6/
+        - CMAKE_CXX_FLAGS="-isystem=/usr/include/c++/6/"
 
     - os: linux
       addons:
@@ -26,12 +26,13 @@ matrix:
             - libboost-dev
       env:
         - TOOLCHAIN="export CC=gcc-7 CXX=g++-7"
-        - CMAKE_CXX_FLAGS=-isystem=/usr/include/c++/6/
+        - CMAKE_CXX_FLAGS="-isystem=/usr/include/c++/6/"
 
     - os: linux
       addons:
         apt:
           sources:
+            - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-5.0
           packages:
             - clang-5.0
@@ -40,7 +41,7 @@ matrix:
             - libboost-dev
       env:
         - TOOLCHAIN="export CC=clang-5.0 CXX=clang++-5.0"
-        - CMAKE_CXX_FLAGS=-isystem=/usr/include/c++/6/
+        - CMAKE_CXX_FLAGS="-isystem=/usr/include/c++/6/"
 
 before_install:
   - echo ${TOOLCHAIN} 

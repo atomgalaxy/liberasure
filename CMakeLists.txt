@@ -62,49 +62,14 @@ project(liberasure)
 
 enable_testing()
 
-#################
-# FINDING BOOST #
-################# 
-# Note: Boost is not required to build the library, as it is meant to be
-# completely standalone. It is, however, required to build the tests and the
-# lectures.
-#
-# add your boost location here in the list of globs, and it should find it
-FILE(GLOB BOOST_SEARCH_PATH
-  "/usr/local/Cellar/boost/*"
-  "/usr/include/boost*"
-  "${TRAVIS_BUILD_DIR}/boost-*")
-
-# make sure versions are sorted properly, so that later versions are ahead of
-# the previous ones...
-LIST(SORT BOOST_SEARCH_PATH)
-LIST(REVERSE BOOST_SEARCH_PATH)
-
-message(STATUS "Looking for Boost in the default places...")
-find_package(Boost 1.56.0)
-if (NOT Boost_FOUND)
-  foreach (BOOST_ROOT ${BOOST_SEARCH_PATH})
-    message(STATUS "Looking for Boost in ${BOOST_ROOT}")
-    find_package(Boost 1.56.0)
-    if (Boost_FOUND)
-      break()
-    endif()
-  endforeach(BOOST_ROOT)
-endif()
-if (NOT Boost_FOUND)
-  message(FATAL_ERROR "Boost not found.")
-endif()
-
-# include the boost directories
-include_directories(${Boost_INCLUDE_DIRS})
 # enable c++14
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -g ")
 
-if (NOT CMAKE_LTO MATCHES "OFF")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
-  message(STATUS "LTO is on, CMAKE_LTO is ${CMAKE_LTO}")
-else()
+if (CMAKE_LTO MATCHES "OFF")
   message(STATUS "Turning off -flto")
+else()
+  message(STATUS "LTO is on, CMAKE_LTO is ${CMAKE_LTO}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
 endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")

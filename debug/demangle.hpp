@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "boost/core/demangle.hpp"
+// #include "boost/core/demangle.hpp"
 
 #include <typeinfo>
 #include <string>
@@ -48,7 +48,7 @@ std::string replace_all(std::string in_what,
 std::string demangle(char const* const name) {
   using std::string; using std::vector; using std::make_pair; using std::pair;
   using std::move;
-  string demangled = boost::core::demangle(name);
+  string demangled = name;
   static vector<pair<string, string>> const replacements{
       {"std::__1::basic_string<char, std::__1::char_traits<char>, "
        "std::__1::allocator<char> >",

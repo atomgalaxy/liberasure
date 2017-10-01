@@ -12,7 +12,7 @@ matrix:
             - cmake
             - libboost-dev
       env:
-        - TOOLCHAIN="export CC=gcc-6 CXX=g++-6
+        - TOOLCHAIN="export CC=gcc-6 CXX=g++-6"
         - CMAKE_CXX_FLAGS="-isystem=/usr/include/c++/6/"
 
     - os: linux

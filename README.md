@@ -1,6 +1,8 @@
 liberasure
 ==========
 
+<a target="_blank" href="https://travis-ci.org/atomgalaxy/liberasure">![Travis status][badge.Travis]</a>
+
 A no-dependencies C++ extensible type erasure library
 
 To be done: repackage

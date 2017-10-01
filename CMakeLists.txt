@@ -101,5 +101,4 @@ add_test(NAME  test_dereferencable COMMAND test_dereferencable)
 add_executable(test_callable              test/test_callable.cpp)
 add_test(NAME  test_callable COMMAND test_callable)
 
-add_test(NAME hand_rolled_union COMMAND hand_rolled_union)
 add_test(NAME type_erasure_example_runs COMMAND type_erasure_example)

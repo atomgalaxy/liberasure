@@ -16,17 +16,20 @@ cache:
  
 matrix:
   include:
-    - env: COMPILER=clang++-3.7
-      addons: { apt: { packages: ["clang-3.7"], sources: ["llvm-toolchain-trusty-3.7", "ubuntu-toolchain-r-test"] } }
-
-    - env: COMPILER=clang++-3.8
-      addons: { apt: { packages: ["clang-3.8"], sources: ["llvm-toolchain-trusty-3.8", "ubuntu-toolchain-r-test"] } }
-
-    - env: COMPILER=clang++-3.9
-      addons: { apt: { packages: ["clang-3.9"], sources: ["llvm-toolchain-trusty-3.9", "ubuntu-toolchain-r-test"] } }
-
+    #    - env: COMPILER=clang++-3.7
+    #  addons: { apt: { packages: ["clang-3.7"], sources: ["llvm-toolchain-trusty-3.7", "ubuntu-toolchain-r-test"] } }
+    #
+    #- env: COMPILER=clang++-3.8
+    #  addons: { apt: { packages: ["clang-3.8"], sources: ["llvm-toolchain-trusty-3.8", "ubuntu-toolchain-r-test"] } }
+    #
+    #- env: COMPILER=clang++-3.9
+    #  addons: { apt: { packages: ["clang-3.9"], sources: ["llvm-toolchain-trusty-3.9", "ubuntu-toolchain-r-test"] } }
+    #
     - env: COMPILER=clang++-4.0
       addons: { apt: { packages: ["clang-4.0"], sources: ["llvm-toolchain-trusty-4.0", "ubuntu-toolchain-r-test"] } }
+
+    - env: COMPILER=clang++-5.0
+      addons: { apt: { packages: ["clang-5.0"], sources: ["llvm-toolchain-trusty-5.0", "ubuntu-toolchain-r-test"] } }
 
     - env: COMPILER=g++-6
       addons: { apt: { packages: ["g++-6"], sources: ["ubuntu-toolchain-r-test"] } }

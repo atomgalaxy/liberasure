@@ -44,6 +44,9 @@ before_install:
     - eval "${MATRIX_EVAL}"
 
 script:
-  - cmake -GNinja
-  - ninja
-  - ninja test
+  - export SRCDIR="$(pwd)"
+  - mkdir ../build/
+  - cd ../build/
+  - cmake -G "Unix Makefiles" "$SRCDIR"
+  - make
+  - make test

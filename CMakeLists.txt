@@ -106,7 +106,7 @@ add_executable(type_erasure_example       examples/type_erasure_example.cpp)
 
 # movable test & negatives
 add_executable(test_type_erasure_movable  test/test_type_erasure_movable.cpp)
-add_executable(test_meta test/meta.cpp)
+add_executable(test_meta test/test_meta.cpp)
 add_test(NAME  test_type_erasure_movable COMMAND test_type_erasure_movable)
 assert_build_fails(TEST_NAME negative_test_copyable
                    TARGET negative_test_copyable test/test_type_erasure_movable.cpp

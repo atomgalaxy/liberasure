@@ -1,104 +1,107 @@
-cmake_minimum_required( VERSION 3.2 )
-set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake/modules/ )
+cmake_minimum_required(VERSION 3.5)
 
-include(CMakeParseArguments)
-message(STATUS ${CMAKE_MODULE_PATH})
+if(NOT DEFINED PROJECT_NAME)
+  set(NOT_SUBPROJECT ON)
+endif()
+
+# liberasure's build breaks if done in-tree. You probably should not build
+# things in tree anyway, but we can allow projects that include liberasure as a
+# subproject to build in-tree as long as it is not in our tree.
+if(CMAKE_BINARY_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  message(
+    FATAL_ERROR
+      "Building in-source is not supported! Create a build dir and remove ${CMAKE_SOURCE_DIR}/CMakeCache.txt"
+  )
+endif()
+
+project(
+  erasure
+  LANGUAGES CXX
+  VERSION 1.0)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMake")
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+include(CTest)
+
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+# define some folders
+set(ERASURE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(TEST_DIR ${ERASURE_DIR}/test)
+set(HEADER_DIR ${ERASURE_DIR}/include)
+set(EXAMPLES_DIR ${ERASURE_DIR}/examples)
+
 include(assert_build_fails)
 
-#########################
-# function definitions  #
-#########################
+# add catch as a 'linkable' target
+add_library(erasure INTERFACE)
 
-# add_markdown
-# ------------
-#
-# Add a markdown target that compiles into an html file.
-#
-# Parameters:
-# OPT_TARGET     -- the target being defined (relative to binary dir)
-# OPT_SOURCE     -- the main source file (relative to source dir)
-# OPT_STYLESHEET -- the html stylesheet (css) that will be used to render the
-#                   html document. (relative to source dir)
-#
-# Other dependencies:
-# MD -- the markdown compiler script
-#       (has to accept the three arguments in SOURCE, STYLESHEET, TARGET order)
-#
-set( MD "${CMAKE_SOURCE_DIR}/build_markdown.sh" )
-function(add_markdown OPT_TARGET OPT_SOURCE OPT_STYLESHEET)
-  set(TARGET "${CMAKE_CURRENT_BINARY_DIR}/${OPT_TARGET}")
-  set(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/${OPT_SOURCE}")
-  set(STYLESHEET "${CMAKE_CURRENT_SOURCE_DIR}/${OPT_STYLESHEET}")
+# depend on some obvious c++11 features so the dependency is transitively added
+# dependents
+target_compile_features(
+  erasure
+  INTERFACE cxx_alignas
+            cxx_alignof
+            cxx_attributes
+            cxx_auto_type
+            cxx_constexpr
+            cxx_defaulted_functions
+            cxx_deleted_functions
+            cxx_final
+            cxx_lambdas
+            cxx_noexcept
+            cxx_override
+            cxx_range_for
+            cxx_rvalue_references
+            cxx_static_assert
+            cxx_strong_enums
+            cxx_trailing_return_types
+            cxx_unicode_literals
+            cxx_user_literals
+            cxx_variadic_macros)
 
-  add_custom_command(
-    OUTPUT "${TARGET}"
-    COMMAND "${MD}" "${SOURCE}" "${STYLESHEET}" "${TARGET}"
-    MAIN_DEPENDENCY "${SOURCE}"
-    DEPENDS "${STYLESHEET}" "${MD}"
-    VERBATIM)
-endfunction(add_markdown)
-##############################
-#  end function definitions  #
-##############################
+target_include_directories(
+  erasure INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+                    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+add_library(erasure::erasure ALIAS erasure)
+
+# add catch as a 'linkable' target
+add_library(erasure_debug INTERFACE)
+
+# depend on some obvious c++11 features so the dependency is transitively added
+# dependents
+target_compile_features(
+  erasure_debug
+  INTERFACE cxx_alignas
+            cxx_alignof
+            cxx_attributes
+            cxx_auto_type
+            cxx_constexpr
+            cxx_defaulted_functions
+            cxx_deleted_functions
+            cxx_final
+            cxx_lambdas
+            cxx_noexcept
+            cxx_override
+            cxx_range_for
+            cxx_rvalue_references
+            cxx_static_assert
+            cxx_strong_enums
+            cxx_trailing_return_types
+            cxx_unicode_literals
+            cxx_user_literals
+            cxx_variadic_macros)
+
+add_library(erasure_debug::erasure_debug ALIAS erasure_debug)
+
+target_include_directories(
+  erasure_debug INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+                          $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+add_subdirectory(examples)
+add_subdirectory(test)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-
-# BUILD TYPE DEFAULTING / PARSING
-# If the user specifies -DCMAKE_BUILD_TYPE=BuildType on the command line, take
-# their definition and dump it in the cache along with proper documentation,
-# otherwise set CMAKE_BUILD_TYPE to Debug prior to calling project(). This is
-# the only variable that should be set before the build.
-set(CMAKE_BUILD_TYPE_HELP
-    "Choose the type of build, options are: "
-    " Debug (default), Release, RelWithDebInfo.")
-if(DEFINED CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" cache string
-      "${CMAKE_BUILD_TYPE_HELP}")
-else()
-   set(CMAKE_BUILD_TYPE "Debug" cache string "${CMAKE_BUILD_TYPE_HELP}")
-endif()
-
-project(liberasure)
-
-enable_testing()
-
-# enable c++14
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -g ")
-
-if (CMAKE_LTO MATCHES "OFF")
-  message(STATUS "Turning off -flto")
-else()
-  message(STATUS "LTO is on, CMAKE_LTO is ${CMAKE_LTO}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
-endif()
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ferror-limit=2")
-endif()
-
-include_directories("${CMAKE_SOURCE_DIR}/include")
-include_directories("${CMAKE_SOURCE_DIR}")
-add_executable(type_erasure_example       examples/type_erasure_example.cpp)
-
-# movable test & negatives
-add_executable(test_type_erasure_movable  test/test_type_erasure_movable.cpp)
-add_executable(test_meta test/test_meta.cpp)
-add_test(NAME  test_type_erasure_movable COMMAND test_type_erasure_movable)
-assert_build_fails(TEST_NAME negative_test_copyable
-                   TARGET negative_test_copyable test/test_type_erasure_movable.cpp
-                   DEFINITIONS NOCOMPILE_COPYABLE_TEST
-                   )
-assert_build_fails(TEST_NAME negative_test_movable
-                   TARGET negative_test_movable test/test_type_erasure_movable.cpp
-                   DEFINITIONS NOCOMPILE_MOVABLE_TEST
-                   )
-
-# dereferencable test
-add_executable(test_dereferencable        test/test_dereferencable.cpp)
-add_test(NAME  test_dereferencable COMMAND test_dereferencable)
-
-# callable test
-add_executable(test_callable              test/test_callable.cpp)
-add_test(NAME  test_callable COMMAND test_callable)
-
-add_test(NAME type_erasure_example_runs COMMAND type_erasure_example)

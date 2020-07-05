@@ -22,6 +22,7 @@
 #include <iostream>
 #include <vector>
 #include <tuple>
+#include <cassert>
 
 namespace dbg_util {
 
@@ -48,6 +49,7 @@ std::ostream& operator<<(std::ostream& out, operation op) {
     case operation::SWAP: return out << "SWAP";
     case operation::EQUALS: return out << "EQUALS";
   }
+  assert(false && "Unreachable");
 }
 
 template <typename T>

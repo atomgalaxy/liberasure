@@ -343,7 +343,7 @@ using compose_feature_group_t =
 
 template <typename ProvidesDefinition> struct compose_models {
   template <template <typename> class T, typename U>
-  using type = typename ProvidesDefinition::template model_name_unhider<T, U>;
+  using type = T<U>;
 };
 template <typename ProvidesDefinition>
 using compose_models_t = compose_models<ProvidesDefinition>;
@@ -351,7 +351,7 @@ using compose_models_t = compose_models<ProvidesDefinition>;
 template <typename ProvidesDefinition> struct compose_interfaces {
   template <template <typename> class T, typename U>
   using type =
-      typename ProvidesDefinition::template interface_name_unhider<T, U>;
+      typename ProvidesDefinition::template importer<T, U>;
 };
 template <typename ProvidesDefinition>
 using compose_interfaces_t = compose_interfaces<ProvidesDefinition>;
@@ -388,6 +388,25 @@ template <typename FeatureClass> struct feature_concept_check {
 template <typename T>
 using feature_concept_check_t = typename feature_concept_check<T>::type;
 
+template <typename Feature>
+struct tag_t final {
+};
+
+template <typename Feature>
+inline constexpr tag_t<Feature> tag = {};
+
+struct sizeof_alignof;
+struct target_type;
+struct allocate;
+struct copy_construct_in;
+struct allocate_and_copy_construct_in;
+struct copy_assignable;
+struct copy_constructible;
+struct move_assignable;
+struct move_constructible;
+struct move_construct_in;
+struct allocate_and_move_construct_in;
+
 // user interface
 template <typename Concept, typename AnyOptions> struct concept_base {
   using concept_type = Concept;
@@ -398,13 +417,13 @@ template <typename Concept, typename AnyOptions> struct concept_base {
       ubuf::small_buffer<(typename options::buffer_actual_size){}>;
 
   // copy construction support
-  virtual auto sizeof_alignof() const -> buffer_spec = 0;
+  virtual auto erase(tag_t<sizeof_alignof>) const -> buffer_spec = 0;
   // type support
-  virtual auto target_type() const -> std::type_info const & = 0;
+  virtual auto erase(tag_t<target_type>) const -> std::type_info const & = 0;
   /**
    * @param buf inout.
    */
-  virtual auto allocate(storage_type &buf) const -> buffer_t = 0;
+  virtual auto erase(tag_t<allocate>, storage_type &buf) const -> buffer_t = 0;
 
   /**
    * Make sure we always have a virtual destructor to call.
@@ -451,10 +470,6 @@ struct concept_t : chain_concepts<concept_t<AnyOptions>, AnyOptions> {};
 
 template <typename AnyOptions> using any_concept = concept_t<AnyOptions>;
 
-/* ******************************************************************
- * type function: chain_models
- * ******************************************************************/
-
 /**
  * In the end, provide a few useful typedefs and self(), and inherit from
  * Concept to get all of the stuff from it.
@@ -464,26 +479,32 @@ struct model_base : Concept {
   using value_type = Value;
   using model_type = Model;
 
-  auto self() -> model_type & { return static_cast<model_type &>(*this); }
-  decltype(auto) value() { return self().value(); }
-  decltype(auto) value() const { return self().value(); }
-
-  auto self() const -> model_type const & {
+  decltype(auto) value() & { return self().value(); }
+  decltype(auto) value() const& { return self().value(); }
+  auto self() &-> model_type & { return static_cast<model_type &>(*this); }
+  auto self() const& -> model_type const & {
     return static_cast<model_type const &>(*this);
   }
+  auto self() &&-> model_type && { return static_cast<model_type &&>(*this); }
+  auto self() const&& -> model_type const && {
+    return static_cast<model_type const &&>(*this);
+  }
+
   auto self_cast(m_vtbl<Concept> &y) const -> model_type & {
     return dynamic_cast<model_type &>(y);
   }
   auto self_cast(m_vtbl<Concept> const &y) const -> model_type const & {
     return dynamic_cast<model_type const &>(y);
   }
-  auto sizeof_alignof() const -> buffer_spec final {
+
+  // dynamic queries
+  auto erase(tag_t<sizeof_alignof>) const -> buffer_spec final {
     return {sizeof(model_type), alignof(model_type)};
   }
-  auto target_type() const -> std::type_info const & final {
+  auto erase(tag_t<target_type>) const -> std::type_info const & final {
     return typeid(value_type);
   }
-  auto allocate(m_storage<Concept> &buf) const -> buffer_t  final {
+  auto erase(tag_t<allocate>, m_storage<Concept> &buf) const -> buffer_t  final {
     return buf.template allocate<model_type>();
   }
 };
@@ -492,9 +513,6 @@ template <typename BaseModel> using m_model = typename BaseModel::model_type;
 
 template <typename Tag, typename Base>
 using link_models = typename Tag::template model<Base>;
-template <typename Tag, typename Base1, typename Base2>
-using link_model_unhiders =
-    typename Tag::template model_name_unhider<Base1, Base2>;
 
 template <typename Value, typename Model, typename Concept>
 using chain_models =
@@ -554,8 +572,8 @@ using any_model = model_t<Value, Concept>;
 template <typename Tag, typename Base>
 using link_interfaces = typename Tag::template interface<Base>;
 template <typename Tag, typename Base1, typename Base2>
-using link_interface_name_unhiders =
-    typename Tag::template interface_name_unhider<Base1, Base2>;
+using link_importers =
+    typename Tag::template importer<Base1, Base2>;
 
 // base of recursion
 template <typename InterfaceSupport> struct interface_base {};
@@ -574,17 +592,13 @@ using ifc_model = typename ifc<T>::template model_type<V>;
 template <typename T> using ifc_concept = typename ifc<T>::concept_type;
 template <typename T> using ifc_tags = typename ifc<T>::tags;
 template <typename T> using ifc_any_type = typename ifc<T>::any_type;
-template <typename T> decltype(auto) ifc_self_cast(T &x) {
-  return static_cast<ifc_any_type<T> &>(x);
+
+
+template <typename T> decltype(auto) ifc_self_cast(T &&x) {
+  return meta::forward_cast<ifc_any_type<T>>((T&&)x);
 }
-template <typename T> decltype(auto) ifc_self_cast(T const &x) {
-  return static_cast<ifc_any_type<T> const &>(x);
-}
-template <typename T> auto ifc_concept_ptr(T &x) {
-  return concept_ptr(ifc_self_cast(x));
-}
-template <typename T> auto ifc_concept_ptr(T const &x) {
-  return concept_ptr(ifc_self_cast(x));
+template <typename T> auto ifc_concept_ptr(T &&x) {
+  return concept_ptr(ifc_self_cast((T&&)x));
 }
 
 template <typename Interface, typename InterfaceSupport>
@@ -597,10 +611,6 @@ using chain_interfaces =
  * type function: interface_t
  * *****************************************************************/
 
-struct copy_assignable;
-struct copy_constructible;
-struct move_assignable;
-struct move_constructible;
 
 // forward declare interface_t because its support class needs it.
 template <bool, bool, bool, bool, typename> struct interface_t;
@@ -642,19 +652,17 @@ struct interface_t_support {
   using storage = m_storage<concept_type>;
 };
 template <typename Support, typename Any1>
-auto self_any_cast(Any1 &x) -> typename Support::any_type & {
-  return static_cast<typename Support::any_type &>(x);
-}
-template <typename Support, typename Any1>
-auto self_any_cast(Any1 const &x) -> typename Support::any_type const & {
-  return static_cast<typename Support::any_type const &>(x);
+auto self_any_cast(Any1 &&x) -> decltype(auto) {
+  return meta::forward_cast<typename Support::any_type>((Any1 &&) x);
 }
 
 /* forward-declare functions we need to implement interface_t. */
 template <typename Interface> auto concept_ptr(Interface &x);
 template <typename Interface> void reset(Interface &x);
-template <typename Interface> auto buffer_ref(Interface const &x) -> auto const &;
-template <typename Interface> auto buffer_ref(Interface &x) -> auto &;
+template <typename Interface> auto buffer_ref(Interface &&x) -> decltype(auto);
+template <typename Tag, typename Interface, typename... As> auto call(Interface&& x, As&&...as) -> decltype(auto) {
+  return ifc_concept_ptr(x)->erase(tag<Tag>, (As &&) as...);
+}
 
 template <typename AnyOptions> struct any_t;
 template <typename AnyOptions, typename T>
@@ -688,7 +696,7 @@ private:
 template <typename AO>
 auto move_construct_any(any_t<AO> &target, any_t<AO> &&source) -> any_t<AO> & {
   if (buffer_ref(source)) {
-    concept_ptr(source)->allocate_and_move_construct_in(buffer_ref(target));
+    concept_ptr(source)->erase(tag<allocate_and_move_construct_in>, buffer_ref(target));
   }
   return target;
 }
@@ -703,7 +711,7 @@ template <typename AO>
 auto move_assign_any(any_t<AO> &target, any_t<AO> &&source,
                            /* is_move_assignable */ std::true_type) -> any_t<AO> & {
   if (same_dynamic_type(target, source)) {
-    concept_ptr(target)->move_assign(std::move(*concept_ptr(source)));
+    concept_ptr(target)->erase(tag<move_assignable>, std::move(*concept_ptr(source)));
   } else {
     move_assign_any(target, std::move(source), std::false_type{});
   }
@@ -714,8 +722,8 @@ auto move_assign_any(any_t<AO> &target, any_t<AO> &&source,
 template <typename Any1, typename Any2>
 void copy_construct_any(Any1 &target, Any2 const &source) {
   if (buffer_ref(source)) {
-    concept_ptr(source)->allocate_and_copy_construct_in(buffer_ref(target));
-  }
+    concept_ptr(source)->erase(tag<allocate_and_copy_construct_in>, buffer_ref(target));
+  } 
 }
 /** For copy_assign_any, the last parameter is is_copyable */
 template <typename Any1, typename Any2>
@@ -727,7 +735,7 @@ auto copy_assign_any(Any1 &target, Any2 const &source, std::false_type) -> Any1 
 template <typename Any1, typename Any2>
 auto copy_assign_any(Any1 &target, Any2 const &source, std::true_type) -> Any1 & {
   if (same_dynamic_type(target, source)) {
-    concept_ptr(target)->copy_assign(*concept_ptr(source));
+    concept_ptr(target)->erase(tag<copy_assignable>, *concept_ptr(source));
   } else {
     copy_assign_any(target, source, std::false_type{});
   }
@@ -1186,9 +1194,7 @@ auto target_type(any_t<AnyOptions> const &x) -> std::type_info const & {
 struct feature {
   struct empty_provides_tag {
     template <template <typename> class T, typename U>
-    struct model_name_unhider : T<U> {};
-    template <template <typename> class T, typename U>
-    struct interface_name_unhider : T<U> {};
+    struct importer : T<U> {};
   };
   using provides = empty_provides_tag;
 };
@@ -1202,22 +1208,23 @@ struct feature {
  * ***********************************************************/
 struct move_constructible : feature {
   template <typename C> struct vtbl : C {
-    virtual void move_construct_in(buffer_t buf) = 0;
-    virtual void allocate_and_move_construct_in(m_storage<C> & buf) = 0;
+    using C::erase;
+    virtual void erase(tag_t<move_construct_in>, buffer_t buf) = 0;
+    virtual void erase(tag_t<allocate_and_move_construct_in>, m_storage<C> & buf) = 0;
   };
 
   template <typename M> struct model : M {
-    void move_construct_in(buffer_t buf) override final {
+    using M::erase;
+    void erase(tag_t<move_construct_in>, buffer_t buf) final {
       make_model<m_model<M>>(buf, std::move(*M::self().get()));
     }
-    void allocate_and_move_construct_in(m_storage<M> &buf) override final {
-      move_construct_in(M::allocate(buf));
+    void erase(tag_t<allocate_and_move_construct_in>, m_storage<M> &buf) final {
+      erase(tag<move_construct_in>, erase(tag<allocate>, buf));
     }
   };
 
-  template <typename I> struct interface : I {
-    /** In interface_t, because the move constructor is a special method. */
-  };
+  template <typename I>
+  using interface = I;
 };
 
 /* ***********************************************************
@@ -1225,18 +1232,19 @@ struct move_constructible : feature {
  * ***********************************************************/
 struct move_assignable : feature {
   template <typename C> struct vtbl : C {
-    virtual void move_assign(m_vtbl<C> &&) = 0;
+    using C::erase;
+    virtual void erase(tag_t<move_assignable>, m_vtbl<C> &&) = 0;
   };
 
   template <typename M> struct model : M {
-    void move_assign(m_vtbl<M> &&y) override final {
+    using M::erase;
+    void erase(tag_t<move_assignable>, m_vtbl<M> &&y) final {
       M::value() = std::move(M::self_cast(y).value());
     }
   };
 
-  template <typename I> struct interface : I {
-    /** In interface_t, because move assignment is a special method. */
-  };
+  template <typename I>
+  using interface = I;
 };
 
 /* ***********************************************************
@@ -1244,24 +1252,25 @@ struct move_assignable : feature {
  * ***********************************************************/
 struct copy_constructible : feature {
   template <typename C> struct vtbl : C {
-    virtual void copy_construct_in(buffer_t) const = 0;
-    virtual void allocate_and_copy_construct_in(m_storage<C> &) const = 0;
+    using C::erase;
+    virtual void erase(tag_t<copy_construct_in>, buffer_t) const = 0;
+    virtual void erase(tag_t<allocate_and_copy_construct_in>, m_storage<C> &) const = 0;
   };
 
   // model
   template <typename M> struct model : M {
-    void copy_construct_in(buffer_t buffer) const override final {
+    using M::erase;
+    void erase(tag_t<copy_construct_in>, buffer_t buffer) const final {
       make_model<m_model<M>>(buffer, *M::self().get());
     }
     void
-    allocate_and_copy_construct_in(m_storage<M> &buf) const override final {
-      copy_construct_in(M::allocate(buf));
+    erase(tag_t<allocate_and_copy_construct_in>, m_storage<M> &buf) const final {
+      erase(tag<copy_construct_in>, erase(tag<allocate>, buf));
     }
   };
 
-  template <typename I> struct interface : I {
-    // implemented in interface_t because copy construction is special
-  };
+  template <typename I>
+  using interface = I;
 };
 
 /* ***********************************************************
@@ -1269,19 +1278,21 @@ struct copy_constructible : feature {
  * ***********************************************************/
 struct copy_assignable : feature {
   template <typename C> struct vtbl : C {
-    virtual void copy_assign(m_vtbl<C> const &x) = 0;
+    using C::erase;
+    virtual void erase(tag_t<copy_assignable>, m_vtbl<C> const &x) = 0;
   };
 
   template <typename M> struct model : M {
+    using M::erase;
     // precondition: y is of model_type.
-    void copy_assign(m_vtbl<M> const &y) override final {
+    void erase(tag_t<copy_assignable>, m_vtbl<M> const &y) final {
       *M::self().get() = *M::self_cast(y).get();
     }
   };
 
-  template <typename I> struct interface : I {
-    // copy-assignment is special, defined in interface_t
-  };
+  template <typename I>
+  using interface = I;
+
 };
 
 /* ***************************************************************
@@ -1289,12 +1300,14 @@ struct copy_assignable : feature {
  * ***************************************************************/
 struct swappable : feature {
   template <typename C> struct vtbl : C {
-    virtual void swap(m_vtbl<C> & y) noexcept = 0;
+    using C::erase;
+    virtual void erase(tag_t<swappable>, m_vtbl<C> & y) noexcept = 0;
   };
 
   template <typename M> struct model : M {
+    using M::erase;
     // precondition: same type, ensured by swappable_interface
-    void swap(m_vtbl<M> &y) noexcept override final {
+    void erase(tag_t<swappable>, m_vtbl<M> &y) noexcept final {
       using std::swap;
       swap(M::value(), M::self_cast(y).value());
     }
@@ -1303,7 +1316,7 @@ struct swappable : feature {
   template <typename I> struct interface : I {
     friend void swap(ifc_any_type<I> &x, ifc_any_type<I> &y) noexcept {
       if (same_dynamic_type(x, y)) {
-        concept_ptr(x)->swap(*concept_ptr(y));
+        concept_ptr(x)->erase(tag<swappable>, *concept_ptr(y));
       } else {
         // just swap the pointers
         if (!swap_if_not_internal(buffer_ref(x), buffer_ref(y))) {
@@ -1326,16 +1339,10 @@ using copyable = typelist<copy_constructible, copy_assignable>;
 namespace debug {
 template <typename Options> auto model_size(any_t<Options> const &x) -> std::size_t {
   auto const pc = concept_ptr(x);
-  return pc ? pc->sizeof_alignof().size : 0;
+  return pc ? pc->erase(tag<sizeof_alignof>).size : 0;
 }
 } // namespace debug
 
-template <typename Feature>
-struct tag_t final {
-};
-
-template <typename Feature>
-inline constexpr tag_t<Feature> tag = {};
 
 // ################# END IMPLEMENTATION, BEGIN PUBLIC INTERFACE SYNOPSIS #######
 

@@ -609,6 +609,37 @@ static_assert(product_t<typelist<char, short>,
                            typelist<short, long, double, unsigned char>>{},
               "");
 
+template <typename T, typename U>
+using copy_rvref_t = std::conditional_t<std::is_rvalue_reference_v<T>,
+                                        std::add_rvalue_reference_t<U>, U>;
+template <typename T, typename U>
+using copy_lvref_t = std::conditional_t<std::is_lvalue_reference_v<T>,
+                                        std::add_lvalue_reference_t<U>, U>;
+template <typename T, typename U>
+using copy_ref_t = copy_rvref_t<T, copy_lvref_t<T, U>>;
+template <typename T, typename U>
+using copy_const_t =
+    std::conditional_t<std::is_const_v<std::remove_reference_t<T>>,
+                       std::add_const_t<U>, U>;
+template <typename T, typename U>
+using copy_volatile_t =
+    std::conditional_t<std::is_volatile_v<std::remove_reference_t<T>>,
+                       std::add_volatile_t<U>, U>;
+template <typename T, typename U>
+using copy_cvref_t = copy_ref_t<T, copy_const_t<T, copy_volatile_t<T, U>>>;
+
+template <typename T, typename U>
+[[gnu::always_inline]] inline constexpr auto forward_like(U &&x) noexcept
+    -> copy_cvref_t<T, std::remove_reference_t<U>> {
+  return std::forward<copy_cvref_t<T, std::remove_reference_t<U>>>(x);
+}
+
+template <typename T, typename U>
+[[gnu::always_inline]] inline constexpr auto forward_cast(U &&x) noexcept
+    -> copy_cvref_t<U&&, std::remove_cvref_t<T>> {
+  return (copy_cvref_t<U&&, std::remove_cvref_t<T>>)x;
+}
+
 
 } // detail
 
@@ -696,6 +727,9 @@ using detail::not_;
 using detail::or_;
 using detail::plus;
 using detail::is_typelist;
+
+using detail::forward_cast;
+using detail::forward_like;
 
 using detail::print_type;
 

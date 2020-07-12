@@ -23,12 +23,7 @@ namespace callable_detail {
 
 struct provides_call_operator {
   template <template <typename> class T, typename U>
-  struct model_name_unhider : T<U> {
-    using T<U>::erase;
-    using U::erase;
-  };
-  template <template <typename> class T, typename U>
-  struct interface_name_unhider : T<U> {
+  struct importer : T<U> {
     using T<U>::operator();
     using U::operator();
   };
@@ -47,14 +42,16 @@ struct callable;
                                                                                \
     template <typename C>                                                      \
     struct vtbl : C {                                                          \
+      using C::erase;                                                          \
       virtual auto erase(erasure::tag_t<callable>, Args... args) constness     \
           -> Return = 0;                                                       \
     };                                                                         \
                                                                                \
     template <typename M>                                                      \
     struct model : M {                                                         \
+      using M::erase;                                                          \
       auto erase(erasure::tag_t<callable>, Args... args) constness             \
-          -> Return override final {                                           \
+          -> Return final {                                                    \
         return M::value()(args...);                                            \
       }                                                                        \
     };                                                                         \
@@ -63,8 +60,7 @@ struct callable;
     struct interface : I {                                                     \
       auto operator()(Args... args) constness -> Return {                      \
         namespace f = feature_support;                                         \
-        return f::ifc_concept_ptr(*this)->erase(erasure::tag<callable>,        \
-                                                (Args &&) args...);            \
+        return call<callable>(*this, (Args &&) args...);                       \
       }                                                                        \
     };                                                                         \
   }

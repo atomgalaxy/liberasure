@@ -20,20 +20,20 @@
 
 namespace erasure {
 namespace features {
-namespace equality_comparable_detail {
-
-namespace f = erasure::feature_support;
 struct equality_comparable : feature_support::feature {
   // vtbl
   template <typename C>
   struct vtbl : C {
-    virtual auto operator_equals(f::m_vtbl<C> const& y) const -> bool = 0;
+    using C::erase;
+    virtual auto erase(erasure::tag_t<equality_comparable>,
+                       feature_support::m_vtbl<C> const &y) const -> bool = 0;
   };
 
   template <typename M>
   struct model : M {
+      using M::erase;
     // precondition: same type, ensured by interface
-    auto operator_equals(f::m_vtbl<M> const& y) const -> bool override final {
+    auto erase(erasure::tag_t<equality_comparable>, feature_support::m_vtbl<M> const& y) const -> bool final {
       auto const& a = M::value();
       auto const& b = M::self_cast(y).value();
       return a == b;
@@ -42,22 +42,20 @@ struct equality_comparable : feature_support::feature {
 
   template <typename I>
   struct interface : I {
-    friend auto operator==(f::ifc_any_type<I> const& x,
-                           f::ifc_any_type<I> const& y) -> bool {
+    friend auto operator==(feature_support::ifc_any_type<I> const& x,
+                           feature_support::ifc_any_type<I> const& y) -> bool {
       if (same_dynamic_type(x, y)) {
-        return concept_ptr(x)->operator_equals(*concept_ptr(y));
+        return concept_ptr(x)->erase(tag<equality_comparable>, *concept_ptr(y));
       } else {
         return false;
       }
     }
-    friend auto operator!=(f::ifc_any_type<I> const& x,
-                           f::ifc_any_type<I> const& y) -> bool {
+    friend auto operator!=(feature_support::ifc_any_type<I> const& x,
+                           feature_support::ifc_any_type<I> const& y) -> bool {
       return !(x == y);
     }
   };
 };
 
-}
-using equality_comparable_detail::equality_comparable;
 }
 }

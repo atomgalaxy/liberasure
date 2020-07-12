@@ -25,8 +25,10 @@ namespace f = erasure::feature_support;
 
 template <typename T>
 struct value_equality_comparable : feature_support::feature {
-  template <typename C> struct vtbl : C { };
-  template <typename M> struct model : M { };
+  template <typename C>
+  using vtbl = C;
+  template <typename M>
+  using model = M;
 
   template <typename I>
   struct interface : I {

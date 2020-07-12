@@ -26,12 +26,13 @@ namespace features {
 struct ostreamable : feature_support::feature {
   template <typename C>
   struct vtbl : C {
-    virtual auto operator_left_shift(std::ostream&) const -> std::ostream& = 0;
+    using C::erase;
+    virtual auto erase(tag_t<ostreamable>, std::ostream&) const -> std::ostream& = 0;
   };
   template <typename M>
   struct model : M {
-    virtual auto operator_left_shift(
-        std::ostream& o) const -> std::ostream& override final {
+    using M::erase;
+    virtual auto erase(tag_t<ostreamable>, std::ostream&o) const -> std::ostream& final {
       return o << M::self().value();
     }
   };
@@ -39,7 +40,7 @@ struct ostreamable : feature_support::feature {
   struct interface : I {
     friend auto operator<<(
         std::ostream& o, feature_support::ifc_any_type<I> const& x) -> std::ostream& {
-      return concept_ptr(x)->operator_left_shift(o);
+      return concept_ptr(x)->erase(tag<ostreamable>, o);
     }
   };
 };

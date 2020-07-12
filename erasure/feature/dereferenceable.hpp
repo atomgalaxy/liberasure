@@ -20,50 +20,45 @@
 
 namespace erasure {
 namespace features {
-
-template <typename ReturnType>
-struct const_dereferenceable : feature_support::feature {
-  template <typename C>
-  struct vtbl : C {
-    virtual auto operator_const_dereference() const -> ReturnType = 0;
-  };
-  template <typename M>
-  struct model : M {
-    virtual auto operator_const_dereference() const -> ReturnType override final {
-      return *M::value();
-    }
-  };
-  template <typename I>
-  struct interface : I {
-    auto operator*() const -> ReturnType {
-      namespace f = erasure::feature_support;
-      return f::ifc_concept_ptr(*this)->operator_const_dereference();
-    }
+struct dereference_tag {
+  template <template <typename> class T, typename U>
+  struct importer : T<U> {
+    using T<U>::operator*;
+    using U::operator*;
   };
 };
+
+#define ERASURE_DEREF_DEF(name, constness)                                     \
+  template <typename ReturnType>                                               \
+  struct name : feature_support::feature {                                     \
+    using provides = dereference_tag;                                          \
+    template <typename C>                                                      \
+    struct vtbl : C {                                                          \
+      using C::erase;                                                          \
+      virtual auto erase(erasure::tag_t<name>) constness -> ReturnType = 0;    \
+    };                                                                         \
+    template <typename M>                                                      \
+    struct model : M {                                                         \
+      using M::erase;                                                          \
+      virtual auto erase(erasure::tag_t<name>) constness -> ReturnType final { \
+        return *this->self().value();                                          \
+      }                                                                        \
+    };                                                                         \
+    template <typename I>                                                      \
+    struct interface : I {                                                     \
+      auto operator*() constness -> ReturnType {                               \
+        namespace f = erasure::feature_support;                                \
+        return erasure::call<name>(*this);           \
+      }                                                                        \
+    };                                                                         \
+  };                                                                           \
+  static_assert(true, "require semicolon")
+
+ERASURE_DEREF_DEF(const_dereferenceable, const);
+ERASURE_DEREF_DEF(mutably_dereferenceable, );
+#undef ERASURE_DEREF_DEF
 template <typename ReturnType>
 using dereferenceable = const_dereferenceable<ReturnType>;
 
-template <typename ReturnType>
-struct mutably_dereferenceable : feature_support::feature {
-  template <typename C>
-  struct vtbl : C {
-    virtual auto operator_mutable_dereference() -> ReturnType = 0;
-  };
-  template <typename M>
-  struct model : M {
-    virtual auto operator_mutable_dereference() -> ReturnType override final {
-      return *M::value();
-    }
-  };
-  template <typename I>
-  struct interface : I {
-    auto operator*() -> ReturnType {
-      namespace f = erasure::feature_support;
-      return f::ifc_concept_ptr(*this)->operator_mutable_dereference();
-    }
-  };
-};
-
-}  // features
-}  // erasure
+} // namespace features
+} // namespace erasure

@@ -47,6 +47,27 @@ void test_concatenate()
       "");
 }
 
+namespace test_forward_cast {
+  struct sx {};
+  struct sy : sx{};
+
+template <typename T>
+struct undef;
+template <typename T>
+using result = decltype(erm::forward_cast<sx>(std::declval<T>()));
+
+void test() {
+  static_assert(std::is_same_v<sx &, result<sy&>>,
+                "mutable refs count as mutable");
+  static_assert(std::is_same_v<sx &&, result<sy&&>>,
+                "mutable rvalue-refs count as mutable rvalue-refs");
+  static_assert(std::is_same_v<sx const &, result<sy const &>>,
+                "const lvalue-refs count as const lvalue refs");
+  static_assert(std::is_same_v<sx const &&, result<sy const&&>>,
+                "const rvalue-refs count as const rvalue refs");
+}
+}
+
 // JUST SO IT COMPILES
 int main()
 {

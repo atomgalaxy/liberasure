@@ -30,12 +30,14 @@ struct less_than_comparable : feature_support::feature {
 
   template <typename C>
   struct vtbl : C {
-    virtual auto operator_less_than(fs::m_vtbl<C> const&) const -> bool = 0;
+    using C::erase;
+    virtual auto erase(tag_t<less_than_comparable>, fs::m_vtbl<C> const&) const -> bool = 0;
   };
 
   template <typename M>
   struct model : M {
-    auto operator_less_than(fs::m_vtbl<M> const& y) const -> bool override final {
+    using M::erase;
+    auto erase(tag_t<less_than_comparable>, fs::m_vtbl<M> const &y) const -> bool final {
       auto const& a = M::value();
       auto const& b = M::self_cast(y).value();
       return a < b;
@@ -47,7 +49,7 @@ struct less_than_comparable : feature_support::feature {
     friend auto operator<(fs::ifc_any_type<I> const& x,
                           fs::ifc_any_type<I> const& y) -> bool {
       if (same_dynamic_type(x, y)) {
-        return concept_ptr(x)->operator_less_than(*concept_ptr(y));
+        return concept_ptr(x)->erase(tag<less_than_comparable>, *concept_ptr(y));
       } else {
         return false;
       }

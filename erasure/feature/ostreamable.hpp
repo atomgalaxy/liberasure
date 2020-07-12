@@ -35,7 +35,7 @@ struct ostreamable : feature_support::feature {
     using M::erase;
     virtual auto erase(tag_t<ostreamable>, std::ostream &o) const
         -> std::ostream & final {
-      return o << M::self().value();
+      return o << erasure::value(*this);
     }
   };
   template <typename I>

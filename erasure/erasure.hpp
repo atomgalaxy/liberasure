@@ -255,38 +255,6 @@ auto same_dynamic_type(Pointer1 const &x, Pointer2 const &y) -> bool {
   return x && y && (std::type_index(typeid(*x)) == std::type_index(typeid(*y)));
 }
 
-/**
- * The vtbl-checking class for the chainable vtbl.
- *
- * @param X is supposed to be a feature class.
- * @param Base is the base class that this chainable vtbl checks
- * @param Link is the binary type-function that will take X and Base and return
- * the subclass of the interface that this particular vtbl is checking for
- * 'chainable'.
- *
- * Chainable basically means that the class inherits from the base it's given,
- * and can be instantiated with that base.
- */
-template <template <typename, typename> class Link, typename Base, typename X>
-struct chainable_concept_check {
-  using typealias = Link<X, Base>;
-  static_assert(std::is_base_of<Base, typealias>{},
-                "Your class does not inherit from its base.");
-  typealias x;
-};
-
-template <template <typename, typename> class Link, typename Features,
-          typename ChainBase>
-struct chain {
-  template <typename X>
-  using assert_concept = chainable_concept_check<Link, ChainBase, X>;
-  using assert_concepts = meta::map_t<assert_concept, Features>;
-  using type = meta::foldr_t<Link, Features, ChainBase>;
-};
-template <template <typename, typename> class Link, typename Features,
-          typename ChainBase>
-using chain_t = typename chain<Link, Features, ChainBase>::type;
-
 template <typename Features>
 struct feature_group {
   using features = Features;
@@ -317,13 +285,12 @@ template <template <typename, typename> class Extract,
 using compose_feature_group_t =
     typename compose_feature_group<Extract, Compose, Features, Base>::type;
 
-template <typename ProvidesDefinition>
-struct compose_models {
+struct apply {
   template <template <typename> class T, typename U>
   using type = T<U>;
 };
-template <typename ProvidesDefinition>
-using compose_models_t = compose_models<ProvidesDefinition>;
+template <typename>
+using compose_models_t = apply;
 
 template <typename ProvidesDefinition>
 struct compose_interfaces {
@@ -385,15 +352,23 @@ struct move_construct_in;
 struct allocate_and_move_construct_in;
 
 // user interface
+template <typename ConceptBase>
+struct concept_traits;
 template <typename Concept, typename AnyOptions>
-struct concept_base {
+struct concept_base;
+
+template <typename Concept, typename AnyOptions>
+struct concept_traits<concept_base<Concept, AnyOptions>> {
   using concept_type = Concept;
   using pointer = concept_type *;
   using const_pointer = concept_type const *;
   using options = AnyOptions;
   using storage_type =
       ubuf::small_buffer<(typename options::buffer_actual_size){}>;
+};
 
+template <typename Concept, typename AnyOptions>
+struct concept_base {
   // copy construction support
   virtual auto erase(tag_t<sizeof_alignof>) const -> ubuf::buffer_spec = 0;
   // type support
@@ -401,7 +376,9 @@ struct concept_base {
   /**
    * @param buf inout.
    */
-  virtual auto erase(tag_t<allocate>, storage_type &buf) const
+  virtual auto
+  erase(tag_t<allocate>,
+        typename concept_traits<concept_base>::storage_type &buf) const
       -> ubuf::buffer_t = 0;
 
   /**
@@ -416,13 +393,13 @@ concept_base_type(concept_base<Concept, AnyOptions> const &) noexcept
     -> concept_base<Concept, AnyOptions> &;
 
 template <typename T>
-using m_concept_base = std::remove_reference_t<decltype(
-    ::erasure::concept_base_type(std::declval<T &>()))>;
+using concept_traits_t = concept_traits<std::remove_reference_t<decltype(
+    ::erasure::concept_base_type(std::declval<T &>()))>>;
 
 template <typename BaseModel>
-using m_vtbl = typename m_concept_base<BaseModel>::concept_type;
+using m_vtbl = typename concept_traits_t<BaseModel>::concept_type;
 template <typename BaseModel>
-using m_storage = typename m_concept_base<BaseModel>::storage_type;
+using m_storage = typename concept_traits_t<BaseModel>::storage_type;
 
 template <typename Tag, typename Base>
 using link_concepts = typename Tag::template vtbl<Base>;
@@ -451,58 +428,100 @@ struct concept_t : chain_concepts<concept_t<AnyOptions>, AnyOptions> {};
 template <typename AnyOptions>
 using any_concept = concept_t<AnyOptions>;
 
+template <typename Value, typename Model, typename Concept>
+struct model_base;
+template <typename>
+struct model_traits;
+
+template <typename Value, typename Model, typename Concept>
+struct model_traits<model_base<Value, Model, Concept>> {
+  using value_type = Value;
+  using model_type = Model;
+};
+
+template <typename Value, typename Model, typename Concept>
+constexpr auto
+model_base_type(model_base<Value, Model, Concept> const &) noexcept
+    -> model_base<Value, Model, Concept> &;
+
+template <typename T>
+using model_traits_t = model_traits<std::remove_reference_t<decltype(
+    ::erasure::model_base_type(std::declval<T &>()))>>;
+
+template <typename BaseModel>
+using m_value = typename model_traits_t<BaseModel>::value_type;
+template <typename BaseModel>
+using m_model = typename model_traits_t<BaseModel>::model_type;
+
+inline namespace self_impl {
+constexpr inline struct self_t final {
+  template <typename Self>
+  [[gnu::always_inline]] friend inline auto tag_invoke(erasure::self_t,
+                                                       Self &&x) noexcept
+      -> meta::copy_cvref_t<Self &&, m_model<Self>> {
+    return static_cast<meta::copy_cvref_t<Self &&, m_model<Self>>>(x);
+  }
+  template <typename Self>
+  [[gnu::always_inline]] inline auto operator()(Self &&model) const noexcept
+      -> decltype(tag_invoke(std::declval<self_t>(), (Self &&) model)) {
+    return tag_invoke(self_t{}, (Self &&) model);
+  }
+} self;
+} // namespace self_impl
+inline namespace value_impl {
+constexpr inline struct value_t final {
+  template <typename Self>
+  [[gnu::always_inline]] friend inline auto tag_invoke(erasure::value_t,
+                                                       Self &&x) noexcept
+      -> meta::copy_cvref_t<Self &&, m_value<Self>> {
+    return erasure::self((Self &&) x).value();
+  }
+  template <typename Self>
+  [[gnu::always_inline]] inline auto operator()(Self &&model) const noexcept
+      -> decltype(tag_invoke(std::declval<value_t>(), (Self &&) model)) {
+    return tag_invoke(value_t{}, (Self &&) model);
+  }
+} value;
+} // namespace value_impl
+
 /**
  * In the end, provide a few useful typedefs and self(), and inherit from
  * Concept to get all of the stuff from it.
  */
 template <typename Value, typename Model, typename Concept>
 struct model_base : Concept {
-  using value_type = Value;
-  using model_type = Model;
+  friend erasure::self_t;
+  friend erasure::value_t;
 
-  decltype(auto) value() & { return self().value(); }
-  decltype(auto) value() const & { return self().value(); }
-  auto self() & -> model_type & { return static_cast<model_type &>(*this); }
-  auto self() const & -> model_type const & {
-    return static_cast<model_type const &>(*this);
+  auto self_cast(m_vtbl<Concept> &y) const -> m_model<model_base> & {
+    return dynamic_cast<m_model<model_base> &>(y);
   }
-  auto self() && -> model_type && { return static_cast<model_type &&>(*this); }
-  auto self() const && -> model_type const && {
-    return static_cast<model_type const &&>(*this);
-  }
-
-  auto self_cast(m_vtbl<Concept> &y) const -> model_type & {
-    return dynamic_cast<model_type &>(y);
-  }
-  auto self_cast(m_vtbl<Concept> const &y) const -> model_type const & {
-    return dynamic_cast<model_type const &>(y);
+  auto self_cast(m_vtbl<Concept> const &y) const
+      -> m_model<model_base> const & {
+    return dynamic_cast<m_model<model_base> const &>(y);
   }
 
   // dynamic queries
   auto erase(tag_t<sizeof_alignof>) const -> ubuf::buffer_spec final {
-    return {sizeof(model_type), alignof(model_type)};
+    return {sizeof(m_model<model_base>), alignof(m_model<model_base>)};
   }
   auto erase(tag_t<target_type>) const -> std::type_info const & final {
-    return typeid(value_type);
+    return typeid(m_value<model_base>);
   }
   auto erase(tag_t<allocate>, m_storage<Concept> &buf) const
       -> ubuf::buffer_t final {
-    return buf.template allocate<model_type>();
+    return buf.template allocate<m_model<model_base>>();
   }
 };
-template <typename BaseModel>
-using m_value = typename BaseModel::value_type;
-template <typename BaseModel>
-using m_model = typename BaseModel::model_type;
 
 template <typename Tag, typename Base>
 using link_models = typename Tag::template model<Base>;
 
 template <typename Value, typename Model, typename Concept>
-using chain_models =
-    compose_feature_groups_t<link_models, compose_models_t,
-                             typename Concept::options::feature_groups,
-                             model_base<Value, Model, Concept>>;
+using chain_models = compose_feature_groups_t<
+    link_models, compose_models_t,
+    typename concept_traits_t<Concept>::options::feature_groups,
+    model_base<Value, Model, Concept>>;
 
 /** SUPPORT FOR std::reference_wrapper */
 template <typename Value>
@@ -527,25 +546,21 @@ struct reference_type<std::reference_wrapper<Value>> {
 template <typename Value, typename Concept>
 struct model_t : chain_models<Value, model_t<Value, Concept>, Concept> {
   // repeat base type...
-  using base = chain_models<Value, model_t<Value, Concept>, Concept>;
-  using typename base::value_type;
-  using reference = typename reference_type<value_type>::reference;
-  using const_reference = typename reference_type<value_type>::const_reference;
-  using type = typename reference_type<value_type>::type;
-  static_assert(std::is_same<value_type, Value>(),
+  static_assert(std::is_same<m_value<model_t>, Value>(),
                 "chain_models bug: incorrect chaining of value_type.");
 
   model_t() {}
-  model_t(value_type &&x) : value_(std::move(x)) {}
-  model_t(value_type const &x) : value_(x) {}
+  model_t(Value &&x) : _value(std::move(x)) {}
+  model_t(Value const &x) : _value(x) {}
 
-  auto value() -> reference { return value_; }
-  auto value() const -> const_reference { return value_; }
+  auto value() & -> Value & { return _value; }
+  auto value() const & -> Value const & { return _value; }
+  auto value() && -> Value && { return std::forward<model_t &&>(*this)._value; }
+  auto value() const && -> Value const && {
+    return std::forward<model_t const &&>(*this)._value;
+  }
 
-  auto get() const -> value_type const * { return &value_; }
-  auto get() -> value_type * { return &value_; }
-
-  value_type value_;
+  Value _value;
 };
 
 template <typename Value, typename Concept>
@@ -561,12 +576,12 @@ template <typename Tag, typename Base1, typename Base2>
 using link_importers = typename Tag::template importer<Base1, Base2>;
 
 // base of recursion
-template <typename InterfaceSupport>
+template <typename InterfaceTraits>
 struct interface_base {};
 
-template <typename InterfaceSupport>
-constexpr auto interface_support_type(interface_base<InterfaceSupport> const &)
-    -> InterfaceSupport;
+template <typename InterfaceTraits>
+constexpr auto interface_support_type(interface_base<InterfaceTraits> const &)
+    -> InterfaceTraits;
 
 // prevent clashes
 template <typename T>
@@ -594,11 +609,11 @@ auto ifc_concept_ptr(T &&x) {
   return erasure::concept_ptr(ifc_self_cast((T &&) x));
 }
 
-template <typename Interface, typename InterfaceSupport>
+template <typename Interface, typename InterfaceTraits>
 using chain_interfaces =
     compose_feature_groups_t<link_interfaces, compose_interfaces_t,
-                             typename InterfaceSupport::options::feature_groups,
-                             interface_base<InterfaceSupport>>;
+                             typename InterfaceTraits::options::feature_groups,
+                             interface_base<InterfaceTraits>>;
 
 /* *****************************************************************
  * type function: interface_t
@@ -609,8 +624,8 @@ template <bool, bool, bool, bool, typename>
 struct interface_t;
 
 template <typename Concept, template <typename> class Model, typename AnyType>
-struct interface_t_support {
-  using options = typename Concept::options;
+struct interface_traits {
+  using options = typename concept_traits_t<Concept>::options;
   using tags = typename options::tags;
   static_assert(meta::is_typelist<tags>{}, "Taglist needs to be a typelist!");
   static_assert(meta::all_t<feature_concept_check_t, tags>{},
@@ -635,12 +650,12 @@ struct interface_t_support {
   using interface_incomplete =
       interface_t<is_move_constructible{}, is_move_assignable{},
                   is_copy_constructible{}, is_copy_assignable{},
-                  interface_t_support>;
+                  interface_traits>;
   using interface_type = interface_incomplete;
 
   // the complete type of the interface. A problem if used in certain contexts
   using interface_complete =
-      chain_interfaces<interface_incomplete, interface_t_support>;
+      chain_interfaces<interface_incomplete, interface_traits>;
   // what any inherits from
   using base = interface_complete;
   using storage = m_storage<concept_type>;
@@ -655,8 +670,10 @@ template <typename Interface>
 void reset(Interface &x);
 template <typename Interface>
 auto buffer_ref(Interface &&x) -> decltype(auto);
+
 template <typename Tag, typename Interface, typename... As>
-auto call(Interface &&x, As &&... as) -> decltype(auto) {
+[[gnu::always_inline]] inline auto call(Interface &&x, As &&... as)
+    -> decltype(auto) {
   return ifc_concept_ptr(x)->erase(tag<Tag>, (As &&) as...);
 }
 
@@ -1002,7 +1019,7 @@ struct any_interface_t {
   using vtbl = any_concept<AnyOptions>;
   template <typename T>
   using model = any_model<std::decay_t<T>, vtbl>;
-  using support_type = interface_t_support<vtbl, model, any_t<AnyOptions>>;
+  using support_type = interface_traits<vtbl, model, any_t<AnyOptions>>;
   using type = typename support_type::interface_type;
 };
 template <typename AnyOptions>
@@ -1196,7 +1213,7 @@ template <typename T, typename AnyOptions>
 auto target(any_t<AnyOptions> const &x) -> T const * {
   using cast_to = ifc_model<decltype(x), T>;
   auto const impl_p = dynamic_cast<cast_to const *>(concept_ptr(x));
-  return impl_p ? impl_p->get() : nullptr;
+  return impl_p ? &erasure::value(*impl_p) : nullptr;
 }
 template <typename T, typename AnyOptions>
 auto target(any_t<AnyOptions> &x) -> T * {
@@ -1238,7 +1255,7 @@ struct move_constructible : feature {
   struct model : M {
     using M::erase;
     void erase(tag_t<move_construct_in>, ubuf::buffer_t buf) final {
-      make_model<m_model<M>>(buf, std::move(*M::self().get()));
+      make_model<m_model<M>>(buf, erasure::value(std::move(*this)));
     }
     void erase(tag_t<allocate_and_move_construct_in>, m_storage<M> &buf) final {
       erase(tag<move_construct_in>, erase(tag<allocate>, buf));
@@ -1263,7 +1280,7 @@ struct move_assignable : feature {
   struct model : M {
     using M::erase;
     void erase(tag_t<move_assignable>, m_vtbl<M> &&y) final {
-      M::value() = std::move(M::self_cast(y).value());
+      erasure::value(*this) = erasure::value(std::move(M::self_cast(y)));
     }
   };
 
@@ -1288,7 +1305,7 @@ struct copy_constructible : feature {
   struct model : M {
     using M::erase;
     void erase(tag_t<copy_construct_in>, ubuf::buffer_t buffer) const final {
-      make_model<m_model<M>>(buffer, *M::self().get());
+      make_model<m_model<M>>(buffer, erasure::value(*this));
     }
     void erase(tag_t<allocate_and_copy_construct_in>,
                m_storage<M> &buf) const final {
@@ -1315,7 +1332,7 @@ struct copy_assignable : feature {
     using M::erase;
     // precondition: y is of model_type.
     void erase(tag_t<copy_assignable>, m_vtbl<M> const &y) final {
-      *M::self().get() = *M::self_cast(y).get();
+      erasure::value(*this) = erasure::value(M::self_cast(y));
     }
   };
 
@@ -1339,7 +1356,7 @@ struct swappable : feature {
     // precondition: same type, ensured by swappable_interface
     void erase(tag_t<swappable>, m_vtbl<M> &y) noexcept final {
       using std::swap;
-      swap(M::value(), M::self_cast(y).value());
+      swap(erasure::value(*this), erasure::value(M::self_cast(y)));
     }
   };
 

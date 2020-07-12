@@ -35,7 +35,7 @@ struct equality_comparable : feature_support::feature {
     // precondition: same type, ensured by interface
     auto erase(erasure::tag_t<equality_comparable>,
                feature_support::m_vtbl<M> const &y) const -> bool final {
-      auto const &a = M::value();
+      auto const &a = erasure::value(*this);
       auto const &b = M::self_cast(y).value();
       return a == b;
     }

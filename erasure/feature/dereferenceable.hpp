@@ -41,7 +41,7 @@ struct dereference_tag {
     struct model : M {                                                         \
       using M::erase;                                                          \
       virtual auto erase(erasure::tag_t<name>) constness -> ReturnType final { \
-        return *this->self().value();                                          \
+        return *erasure::value(std::forward<M constness>(*this));                                          \
       }                                                                        \
     };                                                                         \
     template <typename I>                                                      \

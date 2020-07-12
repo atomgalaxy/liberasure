@@ -698,6 +698,7 @@ using detail::plus;
 using detail::true_predicate;
 
 using detail::copy_const_t;
+using detail::copy_cvref_t;
 using detail::copy_ref_t;
 using detail::forward_cast;
 using detail::forward_like;

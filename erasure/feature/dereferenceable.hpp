@@ -16,49 +16,49 @@
 
 #pragma once
 
-#include "../erasure.hpp"
+#include "erasure/erasure.hpp"
 
 namespace erasure {
 namespace features {
 
 template <typename ReturnType>
-struct const_dereferencable : feature_support::feature {
+struct const_dereferenceable : feature_support::feature {
   template <typename C>
-  struct concept : C {
-    virtual ReturnType operator_const_dereference() const = 0;
+  struct vtbl : C {
+    virtual auto operator_const_dereference() const -> ReturnType = 0;
   };
   template <typename M>
   struct model : M {
-    virtual ReturnType operator_const_dereference() const override final {
+    virtual auto operator_const_dereference() const -> ReturnType override final {
       return *M::value();
     }
   };
   template <typename I>
   struct interface : I {
-    ReturnType operator*() const {
+    auto operator*() const -> ReturnType {
       namespace f = erasure::feature_support;
       return f::ifc_concept_ptr(*this)->operator_const_dereference();
     }
   };
 };
 template <typename ReturnType>
-using dereferencable = const_dereferencable<ReturnType>;
+using dereferenceable = const_dereferenceable<ReturnType>;
 
 template <typename ReturnType>
-struct mutably_dereferencable : feature_support::feature {
+struct mutably_dereferenceable : feature_support::feature {
   template <typename C>
-  struct concept : C {
-    virtual ReturnType operator_mutable_dereference() = 0;
+  struct vtbl : C {
+    virtual auto operator_mutable_dereference() -> ReturnType = 0;
   };
   template <typename M>
   struct model : M {
-    virtual ReturnType operator_mutable_dereference() override final {
+    virtual auto operator_mutable_dereference() -> ReturnType override final {
       return *M::value();
     }
   };
   template <typename I>
   struct interface : I {
-    ReturnType operator*() {
+    auto operator*() -> ReturnType {
       namespace f = erasure::feature_support;
       return f::ifc_concept_ptr(*this)->operator_mutable_dereference();
     }

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../erasure.hpp"
+#include "erasure/erasure.hpp"
 
 namespace erasure {
 namespace features {
@@ -29,13 +29,13 @@ namespace fs = erasure::feature_support;
 struct less_than_comparable : feature_support::feature {
 
   template <typename C>
-  struct concept : C {
-    virtual bool operator_less_than(fs::m_concept<C> const&) const = 0;
+  struct vtbl : C {
+    virtual auto operator_less_than(fs::m_vtbl<C> const&) const -> bool = 0;
   };
 
   template <typename M>
   struct model : M {
-    bool operator_less_than(fs::m_concept<M> const& y) const override final {
+    auto operator_less_than(fs::m_vtbl<M> const& y) const -> bool override final {
       auto const& a = M::value();
       auto const& b = M::self_cast(y).value();
       return a < b;
@@ -44,24 +44,24 @@ struct less_than_comparable : feature_support::feature {
 
   template <typename I>
   struct interface : I {
-    friend bool operator<(fs::ifc_any_type<I> const& x,
-                          fs::ifc_any_type<I> const& y) {
+    friend auto operator<(fs::ifc_any_type<I> const& x,
+                          fs::ifc_any_type<I> const& y) -> bool {
       if (same_dynamic_type(x, y)) {
         return concept_ptr(x)->operator_less_than(*concept_ptr(y));
       } else {
         return false;
       }
     }
-    friend bool operator>(fs::ifc_any_type<I> const& x,
-                          fs::ifc_any_type<I> const& y) {
+    friend auto operator>(fs::ifc_any_type<I> const& x,
+                          fs::ifc_any_type<I> const& y) -> bool {
       return y < x;
     }
-    friend bool operator<=(fs::ifc_any_type<I> const& x,
-                           fs::ifc_any_type<I> const& y) {
+    friend auto operator<=(fs::ifc_any_type<I> const& x,
+                           fs::ifc_any_type<I> const& y) -> bool {
       return !(x > y);
     }
-    friend bool operator>=(fs::ifc_any_type<I> const& x,
-                           fs::ifc_any_type<I> const& y) {
+    friend auto operator>=(fs::ifc_any_type<I> const& x,
+                           fs::ifc_any_type<I> const& y) -> bool {
       return !(x < y);
     }
   };

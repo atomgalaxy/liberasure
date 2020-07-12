@@ -16,33 +16,12 @@
 
 #pragma once
 
-#include "../erasure.hpp"
-
-#include <iostream>
+#include "equality_comparable.hpp"
+#include "erasure/erasure.hpp"
 
 namespace erasure {
 namespace features {
-
-struct ostreamable : feature_support::feature {
-  template <typename C>
-  struct concept : C {
-    virtual std::ostream& operator_left_shift(std::ostream&) const = 0;
-  };
-  template <typename M>
-  struct model : M {
-    virtual std::ostream& operator_left_shift(
-        std::ostream& o) const override final {
-      return o << M::self().value();
-    }
-  };
-  template <typename I>
-  struct interface : I {
-    friend std::ostream& operator<<(
-        std::ostream& o, feature_support::ifc_any_type<I> const& x) {
-      return concept_ptr(x)->operator_left_shift(o);
-    }
-  };
-};
-
-}  // features
-}  // erasure
+using regular =
+    feature_support::typelist<movable, copyable, equality_comparable>;
+}
+}

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "../erasure.hpp"
+#include "erasure/erasure.hpp"
 
 namespace erasure {
 namespace features {
@@ -24,16 +24,16 @@ namespace equality_comparable_detail {
 
 namespace f = erasure::feature_support;
 struct equality_comparable : feature_support::feature {
-  // concept
+  // vtbl
   template <typename C>
-  struct concept : C {
-    virtual bool operator_equals(f::m_concept<C> const& y) const = 0;
+  struct vtbl : C {
+    virtual auto operator_equals(f::m_vtbl<C> const& y) const -> bool = 0;
   };
 
   template <typename M>
   struct model : M {
     // precondition: same type, ensured by interface
-    bool operator_equals(f::m_concept<M> const& y) const override final {
+    auto operator_equals(f::m_vtbl<M> const& y) const -> bool override final {
       auto const& a = M::value();
       auto const& b = M::self_cast(y).value();
       return a == b;
@@ -42,16 +42,16 @@ struct equality_comparable : feature_support::feature {
 
   template <typename I>
   struct interface : I {
-    friend bool operator==(f::ifc_any_type<I> const& x,
-                           f::ifc_any_type<I> const& y) {
+    friend auto operator==(f::ifc_any_type<I> const& x,
+                           f::ifc_any_type<I> const& y) -> bool {
       if (same_dynamic_type(x, y)) {
         return concept_ptr(x)->operator_equals(*concept_ptr(y));
       } else {
         return false;
       }
     }
-    friend bool operator!=(f::ifc_any_type<I> const& x,
-                           f::ifc_any_type<I> const& y) {
+    friend auto operator!=(f::ifc_any_type<I> const& x,
+                           f::ifc_any_type<I> const& y) -> bool {
       return !(x == y);
     }
   };

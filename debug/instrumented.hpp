@@ -37,7 +37,7 @@ enum class operation {
   SWAP,
   EQUALS
 };
-std::ostream& operator<<(std::ostream& out, operation op) {
+auto operator<<(std::ostream& out, operation op) -> std::ostream& {
   switch (op) {
     case operation::DEFAULT_CONSTRUCTION: return out << "DEFAULT_CONSTRUCTION";
     case operation::VALUE_CONSTRUCTION: return out << "VALUE_CONSTRUCTION";
@@ -57,13 +57,13 @@ struct instrumented;
 
 template <typename>
 uint64_t current_id = 0;
-inline uint64_t get_id() { return current_id<void>++; }
+inline auto get_id() -> uint64_t { return current_id<void>++; }
 inline void reset_numbering() { current_id<void> = 0; }
 
 template <typename>
 std::vector<std::tuple<uint64_t, uint64_t, operation>> trace_ = {};
 
-inline auto& trace() { return trace_<void>; }
+inline auto trace() -> auto& { return trace_<void>; }
 template <typename T, typename U>
 inline void add_to_trace(instrumented<T> const& x, instrumented<U> const& y, operation op) {
   trace().emplace_back(x.id, y.id, op);
@@ -81,7 +81,7 @@ auto tuples_to_trace(Tuples const&... ts) {
   return trace_type{ts...};
 }
 template <typename... Tuples>
-bool trace_is(Tuples const&... ts) {
+auto trace_is(Tuples const&... ts) -> bool {
   return trace() == tuples_to_trace(ts...);
 }
 
@@ -99,7 +99,7 @@ void print_trace(std::ostream& o, trace_type const& t = trace()) {
 
 namespace detail {
 template <typename T, typename U>
-constexpr bool swap_is_noexcept(T& x, U& y) {
+constexpr auto swap_is_noexcept(T& x, U& y) -> bool {
   using std::swap;
   return noexcept(swap(x, y));
 }
@@ -128,12 +128,12 @@ struct instrumented {
       , value(std::move(x.value)) {
     add_to_trace(*this, x, operation::MOVE_CONSTRUCTION);
   }
-  instrumented& operator=(instrumented const& x) {
+  auto operator=(instrumented const& x) -> instrumented& {
     add_to_trace(*this, x, operation::COPY_ASSIGNMENT);
     value = x.value;
     return *this;
   }
-  instrumented& operator=(instrumented&& x) {
+  auto operator=(instrumented&& x) -> instrumented& {
     add_to_trace(*this, x, operation::MOVE_ASSIGNMENT);
     value = std::move(x.value);
     return *this;
@@ -144,7 +144,7 @@ struct instrumented {
     } catch (...) {} // don't die if cerr somehow can't be written to.
   }
 
-  friend std::ostream& operator<<(std::ostream& o, instrumented const& x) {
+  friend auto operator<<(std::ostream& o, instrumented const& x) -> std::ostream& {
     return o << demangle(typeid(x).name()) << "{" << x.id << ", "
              << x.value << "}";
   }
@@ -156,7 +156,7 @@ struct instrumented {
     swap(x.value, y.value);
   }
 
-  friend bool operator==(instrumented const& x, instrumented const& y) {
+  friend auto operator==(instrumented const& x, instrumented const& y) -> bool {
     add_to_trace(x, y, operation::EQUALS);
     return x.value == y.value;
   }

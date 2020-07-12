@@ -12,16 +12,20 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+*/
 
 #pragma once
 
-#include "equality_comparable.hpp"
-#include "../erasure.hpp"
+#include <string>
+#include <ostream>
+#include <memory>
 
-namespace erasure {
-namespace features {
-using regular =
-    feature_support::typelist<movable, copyable, equality_comparable>;
-}
+struct unique_string {
+  std::unique_ptr<std::string> value;
+  friend auto operator==(unique_string const& x, unique_string const& y) -> bool {
+    return x.value == y.value;
+  }
+};
+auto operator<<(std::ostream& o, unique_string const& x) -> std::ostream& {
+  return o << (x.value ? *x.value : std::string("nullptr"));
 }

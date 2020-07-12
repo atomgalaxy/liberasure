@@ -28,7 +28,7 @@ namespace meta {
 template <typename... Ts>
 struct typelist { };
 template <typename... Ts>
-typelist<Ts...> constexpr make_typelist(Ts...) { return {}; }
+auto constexpr make_typelist(Ts...) -> typelist<Ts...> { return {}; }
 template <typename... Ts, typename... Us>
 constexpr auto operator==(typelist<Ts...> x, typelist<Us...> y) {
   return std::integral_constant<bool,

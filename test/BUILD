@@ -5,8 +5,8 @@ cc_test(
 )
 
 cc_test(
-    name = "dereferencable",
-    srcs = ["test_dereferencable.cpp"],
+    name = "dereferenceable",
+    srcs = ["test_dereferenceable.cpp"],
     deps = ["@erasure"],
 )
 

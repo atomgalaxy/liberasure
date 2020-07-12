@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include "../erasure.hpp"
+#include "erasure/erasure.hpp"
 
 namespace erasure {
 namespace features {
@@ -25,25 +25,25 @@ namespace f = erasure::feature_support;
 
 template <typename T>
 struct value_equality_comparable : feature_support::feature {
-  template <typename C> struct concept : C { };
+  template <typename C> struct vtbl : C { };
   template <typename M> struct model : M { };
 
   template <typename I>
   struct interface : I {
-    friend bool operator==(f::ifc_any_type<I> const& x, T const& y) {
+    friend auto operator==(f::ifc_any_type<I> const& x, T const& y) -> bool {
       if (auto ptr = target<T>(x)) {
         return *ptr == y;
       } else {
         return false;
       }
     }
-    friend bool operator==(T const& x, f::ifc_any_type<I> const& y) {
+    friend auto operator==(T const& x, f::ifc_any_type<I> const& y) -> bool {
       return y == x;
     }
-    friend bool operator!=(f::ifc_any_type<I> const& x, T const& y) {
+    friend auto operator!=(f::ifc_any_type<I> const& x, T const& y) -> bool {
       return !(x == y);
     }
-    friend bool operator!=(T const& x, f::ifc_any_type<I> const& y) {
+    friend auto operator!=(T const& x, f::ifc_any_type<I> const& y) -> bool {
       return !(x == y);
     }
   };

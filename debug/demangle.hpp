@@ -24,9 +24,9 @@
 #include <utility>
 
 namespace dbg_util {
-std::string replace_all(std::string in_what,
+auto replace_all(std::string in_what,
                         std::string const& what,
-                        std::string const& with) {
+                        std::string const& with) -> std::string {
   auto where = in_what.find(what);
   while (where != std::string::npos) {
     in_what.replace(where, what.size(), with);
@@ -45,7 +45,7 @@ std::string replace_all(std::string in_what,
  * Also compresses old-style template endings with spaces between the >'s with
  * no spaces.
  */
-std::string demangle(char const* const name) {
+auto demangle(char const* const name) -> std::string {
   using std::string; using std::vector; using std::make_pair; using std::pair;
   using std::move;
   string demangled = name;

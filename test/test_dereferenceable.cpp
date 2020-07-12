@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "erasure/feature/dereferencable.hpp"
+#include "erasure/feature/dereferenceable.hpp"
 #include "erasure/feature/regular.hpp"
 #include "erasure/erasure.hpp"
 
@@ -39,27 +39,27 @@ struct can_mutably_deref {
   }
 };
 
-void test_const_dereferencable() {
+void test_const_dereferenceable() {
   using erasure::features::regular;
-  using erasure::features::const_dereferencable;
+  using erasure::features::const_dereferenceable;
   using erasure::make_any;
 
-  auto x = make_any<regular, const_dereferencable<int>>(can_const_deref{});
+  auto x = make_any<regular, const_dereferenceable<int>>(can_const_deref{});
   assert(*x == 1);
 }
 
-void test_mutably_dereferencable() {
+void test_mutably_dereferenceable() {
   using erasure::features::regular;
-  using erasure::features::mutably_dereferencable;
+  using erasure::features::mutably_dereferenceable;
   using erasure::make_any;
 
-  auto x = make_any<regular, mutably_dereferencable<int>>(can_mutably_deref{});
+  auto x = make_any<regular, mutably_dereferenceable<int>>(can_mutably_deref{});
   assert(*x == 1);
   assert(*x == 2);
   assert(*x == 3);
 }
 
 int main() {
-  test_const_dereferencable();
-  test_mutably_dereferencable();
+  test_const_dereferenceable();
+  test_mutably_dereferenceable();
 }

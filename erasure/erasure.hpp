@@ -54,7 +54,7 @@
  * THE CONSTRUCTION MECHANISM
  * --------------------------
  *
- * An any_t comprises three parts: the physical interface, the concept, and the
+ * An any_t comprises three parts: the physical interface, the vtbl, and the
  * model.
  *
  * The physical interface is what sits on the stack - the handle to the rest of
@@ -62,10 +62,10 @@
  * buffer, where models that fit into it can reside. It is constructed through
  * the 'any_interface' constructor.
  *
- * The concept is the specification of the vtable - a contract that the model
+ * The vtbl is the specification of the vtable - a contract that the model
  * implements. It is the abstract base class of the model, and specifies how the
  * physical interface communicates to the model through the model pointer. The
- * concept is never actually instantiated. It is constructed by the any_concept
+ * vtbl is never actually instantiated. It is constructed by the any_concept
  * constructor.
  *
  * The model is the implementation of the physical interface - the concrete
@@ -77,24 +77,24 @@
  * * the feature's interface is what the user of an `any` sees - operators,
  *   methods, even free functions. The parts that comprise the interface call
  *   implementations of those methods in the model.
- * * the concept declares the abstract interface for that part of the model.
+ * * the vtbl declares the abstract interface for that part of the model.
  * * the model implements the dispatch to a part of the value.
  *
  * As a rule, you should not need more than a screenful of code (about 40
  * lines) to implement any given feature, most of which should not actually be
  * code that does anything.
  *
- * ### Composing interface, concept and model
+ * ### Composing interface, vtbl and model
  *
- * All three classes - interface, concept, and model - are composed of a number
+ * All three classes - interface, vtbl, and model - are composed of a number
  * of other classes that give them their features.
  *
  * Every feature provides its implementation of all three classes: its part of
- * the interface, concept and model. See equality_comparable for a basic
+ * the interface, vtbl and model. See equality_comparable for a basic
  * example, and callable for a slightly more advanced example.
  * value_equality_comparable gives a minimal example.
  *
- * For every feature, the feature's interface, concept and model are grouped
+ * For every feature, the feature's interface, vtbl and model are grouped
  * by a feature class (see examples from the previous paragraph). The feature
  * class provides the mechanism by which the feature's implementation classes
  * can be found by the construction mechanism.
@@ -106,7 +106,7 @@
  *
  *     struct my_feature_class { // the name will be used by the clients!
  *       template <typename BaseConcept>
- *       using concept = my_concept<BaseConcept>;       // concept struct
+ *       using vtbl = my_concept<BaseConcept>;       // vtbl struct
  *       template <typename BaseModel>
  *       using model = my_model<BaseModel>;             // model struct
  *       template <typename BaseInterface>
@@ -132,15 +132,15 @@
  *
  * #### For Concepts ####
  *
- * Let C be the base concept, as here:
+ * Let C be the base vtbl, as here:
  *
  *     template <typename C>
  *     struct my_concept : C {
  *       // use the features in here, as shown
  *     };
  *
- * `m_concept<C>` is the full concept type. References and const references to
- * `m_concept<C>` should be taken by your interface functions. It is the full
+ * `m_vtbl<C>` is the full vtbl type. References and const references to
+ * `m_vtbl<C>` should be taken by your interface functions. It is the full
  * 'name' of the abstract class that my_concept is part of.
  *
  * `m_storage<C>` is the storage type that the underlying model uses. You
@@ -167,7 +167,7 @@
  * `M::self()` is the `*this` pointer, cast to the type of `m_model<M>`, and is
  * a reference to it. Use it instead of `*this` in the methods you write.
  *
- * `M::self_cast(m_concept<M> const& y)` casts a reference to a concept you
+ * `M::self_cast(m_vtbl<M> const& y)` casts a reference to a vtbl you
  * received as a function parameter to the type of the model. Use it for
  * methods that their interface only forwards their own type. Comes in a
  * non-const version too.
@@ -197,7 +197,7 @@
  *
  * `ifc_any_type< I >` is the base any_t type.
  *
- * `ifc_concept< I >` is the concept type.
+ * `ifc_concept< I >` is the vtbl type.
  *
  * `ifc_tags< I >` are all the feature tags that make up this any, except for
  * storage-related ones.
@@ -230,7 +230,6 @@
 
 namespace erasure {
 
-namespace _1 {
 
 /* *****************************************************************************
  * memory management types
@@ -255,7 +254,7 @@ using ubuf::owner;
 template <typename Pointer1, typename Pointer2,
           typename = decltype(*std::declval<Pointer1>()),
           typename = decltype(*std::declval<Pointer2>())>
-bool same_dynamic_type(Pointer1 const &x, Pointer2 const &y) {
+auto same_dynamic_type(Pointer1 const &x, Pointer2 const &y) -> bool {
   // typeid's don't have to have the same address, even for the same type, if
   // they are from different compilation units. Even from the same compilation
   // unit, for some reason unknown to me, they sometimes don't compare equal.
@@ -265,12 +264,12 @@ bool same_dynamic_type(Pointer1 const &x, Pointer2 const &y) {
 }
 
 /**
- * The concept-checking class for the chainable concept.
+ * The vtbl-checking class for the chainable vtbl.
  *
  * @param X is supposed to be a feature class.
- * @param Base is the base class that this chainable concept checks
+ * @param Base is the base class that this chainable vtbl checks
  * @param Link is the binary type-function that will take X and Base and return
- * the subclass of the interface that this particular concept is checking for
+ * the subclass of the interface that this particular vtbl is checking for
  * 'chainable'.
  *
  * Chainable basically means that the class inherits from the base it's given,
@@ -383,7 +382,7 @@ template <typename FeatureClass> struct feature_concept_check {
   template <typename B>
   using has_interface = typename FeatureClass::template interface<B>;
   template <typename B>
-  using has_concept = typename FeatureClass::template concept<B>;
+  using has_concept = typename FeatureClass::template vtbl<B>;
   using type = std::true_type;
 };
 template <typename T>
@@ -419,24 +418,24 @@ constexpr auto concept_base_type(concept_base<Concept, AnyOptions> const &) noex
 
 template <typename T>
 using m_concept_base = std::remove_reference_t<
-    decltype(::erasure::_1::concept_base_type(std::declval<T&>()))>;
+    decltype(::erasure::concept_base_type(std::declval<T&>()))>;
 
 template <typename BaseModel>
-using m_concept = typename m_concept_base<BaseModel>::concept_type;
+using m_vtbl = typename m_concept_base<BaseModel>::concept_type;
 template <typename BaseModel>
 using m_storage = typename m_concept_base<BaseModel>::storage_type;
 
 template <typename Tag, typename Base>
-using link_concepts = typename Tag::template concept<Base>;
+using link_concepts = typename Tag::template vtbl<Base>;
 
 /* *****************************************************************************
  * Type function: chain_concepts
  *
  * Constructs a CRTP-based single-inheritance stack from a parameter-pack of
  * tags.
- * @param Concept the final CRTP-class, which ends up being the model concept
+ * @param Concept the final CRTP-class, which ends up being the model vtbl
  * type.
- * @param Tags tags that specify the concept to inherit from.
+ * @param Tags tags that specify the vtbl to inherit from.
  * **************************************************/
 template <typename Concept, typename AnyOptions>
 using chain_concepts =
@@ -445,7 +444,7 @@ using chain_concepts =
                              concept_base<Concept, AnyOptions>>;
 
 /* ****************************************************************
- * type function: concept
+ * type function: vtbl
  * ****************************************************************/
 template <typename AnyOptions>
 struct concept_t : chain_concepts<concept_t<AnyOptions>, AnyOptions> {};
@@ -465,23 +464,23 @@ struct model_base : Concept {
   using value_type = Value;
   using model_type = Model;
 
-  model_type &self() { return static_cast<model_type &>(*this); }
+  auto self() -> model_type & { return static_cast<model_type &>(*this); }
   decltype(auto) value() { return self().value(); }
   decltype(auto) value() const { return self().value(); }
 
-  model_type const &self() const {
+  auto self() const -> model_type const & {
     return static_cast<model_type const &>(*this);
   }
-  model_type &self_cast(m_concept<Concept> &y) const {
+  auto self_cast(m_vtbl<Concept> &y) const -> model_type & {
     return dynamic_cast<model_type &>(y);
   }
-  model_type const &self_cast(m_concept<Concept> const &y) const {
+  auto self_cast(m_vtbl<Concept> const &y) const -> model_type const & {
     return dynamic_cast<model_type const &>(y);
   }
-  buffer_spec sizeof_alignof() const final {
+  auto sizeof_alignof() const -> buffer_spec final {
     return {sizeof(model_type), alignof(model_type)};
   }
-  std::type_info const &target_type() const final {
+  auto target_type() const -> std::type_info const & final {
     return typeid(value_type);
   }
   auto allocate(m_storage<Concept> &buf) const -> buffer_t  final {
@@ -536,11 +535,11 @@ struct model_t : chain_models<Value, model_t<Value, Concept>, Concept> {
   model_t(value_type &&x) : value_(std::move(x)) {}
   model_t(value_type const &x) : value_(x) {}
 
-  reference value() { return value_; }
-  const_reference value() const { return value_; }
+  auto value() -> reference { return value_; }
+  auto value() const -> const_reference { return value_; }
 
-  value_type const *get() const { return &value_; }
-  value_type *get() { return &value_; }
+  auto get() const -> value_type const * { return &value_; }
+  auto get() -> value_type * { return &value_; }
 
   value_type value_;
 };
@@ -567,7 +566,7 @@ constexpr auto interface_support_type(interface_base<InterfaceSupport> const &)
 
 // prevent clashes
 template <typename T>
-using ifc = decltype(::erasure::_1::interface_support_type(std::declval<T>()));
+using ifc = decltype(::erasure::interface_support_type(std::declval<T>()));
 
 template <typename T> using ifc_interface = typename ifc<T>::interface_type;
 template <typename T, typename V>
@@ -643,19 +642,19 @@ struct interface_t_support {
   using storage = m_storage<concept_type>;
 };
 template <typename Support, typename Any1>
-typename Support::any_type &self_any_cast(Any1 &x) {
+auto self_any_cast(Any1 &x) -> typename Support::any_type & {
   return static_cast<typename Support::any_type &>(x);
 }
 template <typename Support, typename Any1>
-typename Support::any_type const &self_any_cast(Any1 const &x) {
+auto self_any_cast(Any1 const &x) -> typename Support::any_type const & {
   return static_cast<typename Support::any_type const &>(x);
 }
 
 /* forward-declare functions we need to implement interface_t. */
 template <typename Interface> auto concept_ptr(Interface &x);
 template <typename Interface> void reset(Interface &x);
-template <typename Interface> auto const &buffer_ref(Interface const &x);
-template <typename Interface> auto &buffer_ref(Interface &x);
+template <typename Interface> auto buffer_ref(Interface const &x) -> auto const &;
+template <typename Interface> auto buffer_ref(Interface &x) -> auto &;
 
 template <typename AnyOptions> struct any_t;
 template <typename AnyOptions, typename T>
@@ -672,7 +671,7 @@ template <typename S> struct creation_support : S::base {
     create_any_from_value(any_this, std::forward<T>(value));
   }
   template <typename T, typename = disable_if_same_any_type<S, T>>
-  typename S::any_type &operator=(T &&value) {
+  auto operator=(T &&value) -> typename S::any_type & {
     auto &any_this = static_cast<typename S::any_type &>(*this);
     reset(any_this);
     create_any_from_value(any_this, std::forward<T>(value));
@@ -687,22 +686,22 @@ private:
 
 // MOVE IMPLEMENTATIONS
 template <typename AO>
-any_t<AO> &move_construct_any(any_t<AO> &target, any_t<AO> &&source) {
+auto move_construct_any(any_t<AO> &target, any_t<AO> &&source) -> any_t<AO> & {
   if (buffer_ref(source)) {
     concept_ptr(source)->allocate_and_move_construct_in(buffer_ref(target));
   }
   return target;
 }
 template <typename AO>
-any_t<AO> &move_assign_any(any_t<AO> &target, any_t<AO> &&source,
-                           /* is_move_assignable */ std::false_type) {
+auto move_assign_any(any_t<AO> &target, any_t<AO> &&source,
+                           /* is_move_assignable */ std::false_type) -> any_t<AO> & {
   reset(target);
   move_construct_any(target, std::move(source));
   return target;
 }
 template <typename AO>
-any_t<AO> &move_assign_any(any_t<AO> &target, any_t<AO> &&source,
-                           /* is_move_assignable */ std::true_type) {
+auto move_assign_any(any_t<AO> &target, any_t<AO> &&source,
+                           /* is_move_assignable */ std::true_type) -> any_t<AO> & {
   if (same_dynamic_type(target, source)) {
     concept_ptr(target)->move_assign(std::move(*concept_ptr(source)));
   } else {
@@ -720,13 +719,13 @@ void copy_construct_any(Any1 &target, Any2 const &source) {
 }
 /** For copy_assign_any, the last parameter is is_copyable */
 template <typename Any1, typename Any2>
-Any1 &copy_assign_any(Any1 &target, Any2 const &source, std::false_type) {
+auto copy_assign_any(Any1 &target, Any2 const &source, std::false_type) -> Any1 & {
   reset(target);
   copy_construct_any(target, source);
   return target;
 }
 template <typename Any1, typename Any2>
-Any1 &copy_assign_any(Any1 &target, Any2 const &source, std::true_type) {
+auto copy_assign_any(Any1 &target, Any2 const &source, std::true_type) -> Any1 & {
   if (same_dynamic_type(target, source)) {
     concept_ptr(target)->copy_assign(*concept_ptr(source));
   } else {
@@ -786,7 +785,7 @@ struct interface_t<true, true, true, false, S> : creation_support<S> {
   INTERFACE_T_MOVE_CONSTRUCTOR;
   INTERFACE_T_MOVE_ASSIGNMENT;
   INTERFACE_T_COPY_CONSTRUCTOR;
-  interface_t &operator=(interface_t const &x) = delete;
+  auto operator=(interface_t const &x) -> interface_t & = delete;
 };
 template <typename S>
 struct interface_t<true, true, false, true, S> : creation_support<S> {
@@ -804,14 +803,14 @@ struct interface_t<true, true, false, false, S> : creation_support<S> {
   INTERFACE_T_MOVE_CONSTRUCTOR;
   INTERFACE_T_MOVE_ASSIGNMENT;
   interface_t(interface_t const &x) = delete;
-  interface_t &operator=(interface_t const &x) = delete;
+  auto operator=(interface_t const &x) -> interface_t & = delete;
 };
 template <typename S>
 struct interface_t<true, false, true, true, S> : creation_support<S> {
   using creation_support<S>::creation_support;
   interface_t() = default;
   INTERFACE_T_MOVE_CONSTRUCTOR;
-  interface_t &operator=(interface_t &&x) = delete;
+  auto operator=(interface_t &&x) -> interface_t & = delete;
   INTERFACE_T_COPY_CONSTRUCTOR;
   INTERFACE_T_COPY_ASSIGNMENT;
 };
@@ -820,16 +819,16 @@ struct interface_t<true, false, true, false, S> : creation_support<S> {
   using creation_support<S>::creation_support;
   interface_t() = default;
   INTERFACE_T_MOVE_CONSTRUCTOR;
-  interface_t &operator=(interface_t &&x) = delete;
+  auto operator=(interface_t &&x) -> interface_t & = delete;
   INTERFACE_T_COPY_CONSTRUCTOR;
-  interface_t &operator=(interface_t const &x) = delete;
+  auto operator=(interface_t const &x) -> interface_t & = delete;
 };
 template <typename S>
 struct interface_t<true, false, false, true, S> : creation_support<S> {
   using creation_support<S>::creation_support;
   interface_t() = default;
   INTERFACE_T_MOVE_CONSTRUCTOR;
-  interface_t &operator=(interface_t &&x) = delete;
+  auto operator=(interface_t &&x) -> interface_t & = delete;
   interface_t(interface_t const &x) = delete;
   INTERFACE_T_COPY_ASSIGNMENT;
 };
@@ -838,9 +837,9 @@ struct interface_t<true, false, false, false, S> : creation_support<S> {
   using creation_support<S>::creation_support;
   interface_t() = default;
   INTERFACE_T_MOVE_CONSTRUCTOR;
-  interface_t &operator=(interface_t &&x) = delete;
+  auto operator=(interface_t &&x) -> interface_t & = delete;
   interface_t(interface_t const &x) = delete;
-  interface_t &operator=(interface_t const &x) = delete;
+  auto operator=(interface_t const &x) -> interface_t & = delete;
 };
 template <typename S>
 struct interface_t<false, true, true, true, S> : creation_support<S> {
@@ -858,7 +857,7 @@ struct interface_t<false, true, true, false, S> : creation_support<S> {
   interface_t(interface_t &&x) = delete;
   INTERFACE_T_MOVE_ASSIGNMENT;
   INTERFACE_T_COPY_CONSTRUCTOR;
-  interface_t &operator=(interface_t const &x) = delete;
+  auto operator=(interface_t const &x) -> interface_t & = delete;
 };
 template <typename S>
 struct interface_t<false, true, false, true, S> : creation_support<S> {
@@ -878,7 +877,7 @@ struct interface_t<false, true, false, false, S> : creation_support<S> {
   interface_t(interface_t &&x) = delete;
   INTERFACE_T_MOVE_ASSIGNMENT;
   interface_t(interface_t const &x) = delete;
-  interface_t &operator=(interface_t const &x) = delete;
+  auto operator=(interface_t const &x) -> interface_t & = delete;
   static_assert(!std::is_same<S, S>{}, "Types that are not either move or copy "
                                        "constructible are not supported.");
 };
@@ -887,7 +886,7 @@ struct interface_t<false, false, true, true, S> : creation_support<S> {
   using creation_support<S>::creation_support;
   interface_t() = default;
   interface_t(interface_t &&x) = delete;
-  interface_t &operator=(interface_t &&x) = delete;
+  auto operator=(interface_t &&x) -> interface_t & = delete;
   INTERFACE_T_COPY_CONSTRUCTOR;
   INTERFACE_T_COPY_ASSIGNMENT;
 };
@@ -896,16 +895,16 @@ struct interface_t<false, false, true, false, S> : creation_support<S> {
   using creation_support<S>::creation_support;
   interface_t() = default;
   interface_t(interface_t &&x) = delete;
-  interface_t &operator=(interface_t &&x) = delete;
+  auto operator=(interface_t &&x) -> interface_t & = delete;
   INTERFACE_T_COPY_CONSTRUCTOR;
-  interface_t &operator=(interface_t const &x) = delete;
+  auto operator=(interface_t const &x) -> interface_t & = delete;
 };
 template <typename S>
 struct interface_t<false, false, false, true, S> : creation_support<S> {
   using creation_support<S>::creation_support;
   interface_t() = default;
   interface_t(interface_t &&x) = delete;
-  interface_t &operator=(interface_t &&x) = delete;
+  auto operator=(interface_t &&x) -> interface_t & = delete;
   interface_t(interface_t const &x) = delete;
   INTERFACE_T_COPY_ASSIGNMENT;
   static_assert(!std::is_same<S, S>{}, "Types that are not either move or copy "
@@ -916,9 +915,9 @@ struct interface_t<false, false, false, false, S> : creation_support<S> {
   using creation_support<S>::creation_support;
   interface_t() = default;
   interface_t(interface_t &&x) = delete;
-  interface_t &operator=(interface_t &&x) = delete;
+  auto operator=(interface_t &&x) -> interface_t & = delete;
   interface_t(interface_t const &x) = delete;
-  interface_t &operator=(interface_t const &x) = delete;
+  auto operator=(interface_t const &x) -> interface_t & = delete;
   static_assert(!std::is_same<S, S>{}, "Types that are not either move or copy "
                                        "constructible are not supported.");
 };
@@ -938,18 +937,18 @@ struct interface_t_access {
     return x;
   }
   template <bool MC, bool MA, bool CC, bool CA, typename S>
-  static auto &value_ptr(interface_t<MC, MA, CC, CA, S> &x) {
+  static auto value_ptr(interface_t<MC, MA, CC, CA, S> &x) -> auto & {
     return get_creation_support(x)._any_ifc_value;
   }
   template <bool MC, bool MA, bool CC, bool CA, typename S>
-  static auto const &value_ptr(interface_t<MC, MA, CC, CA, S> const &x) {
+  static auto value_ptr(interface_t<MC, MA, CC, CA, S> const &x) -> auto const & {
     return get_creation_support(x)._any_ifc_value;
   }
 };
-template <typename Interface> auto const &buffer_ref(Interface const &x) {
+template <typename Interface> auto buffer_ref(Interface const &x) -> auto const & {
   return interface_t_access::value_ptr(x);
 }
-template <typename Interface> auto &buffer_ref(Interface &x) {
+template <typename Interface> auto buffer_ref(Interface &x) -> auto & {
   return interface_t_access::value_ptr(x);
 }
 template <typename Interface> auto concept_ptr(Interface &x) {
@@ -960,38 +959,38 @@ template <typename Interface> auto concept_ptr(Interface const &x) {
       buffer_ref(x).get());
 }
 template <typename T, typename Interface>
-auto const *model_ptr(Interface const &x) {
+auto model_ptr(Interface const &x) -> auto const * {
   auto cptr = concept_ptr(x);
   auto const impl_p = dynamic_cast<ifc_model<decltype(x), T> const *>(cptr);
   return impl_p ? impl_p : nullptr;
 }
-template <typename T, typename Interface> auto *model_ptr(Interface &x) {
+template <typename T, typename Interface> auto model_ptr(Interface &x) -> auto * {
   auto const &const_x = x;
   return const_cast<ifc_model<decltype(x), T> *>(model_ptr<T>(const_x));
 }
 template <typename Interface> void reset(Interface &x) {
-  using concept = ifc_concept<decltype(x)>;
+  using vtbl = ifc_concept<decltype(x)>;
   auto value = concept_ptr(x);
   if (value) {
-    value->~concept();
+    value->~vtbl();
     buffer_ref(x).reset();
   }
 }
 template <typename AO>
-bool same_dynamic_type(any_t<AO> const &x, any_t<AO> const &y) {
+auto same_dynamic_type(any_t<AO> const &x, any_t<AO> const &y) -> bool {
   return same_dynamic_type(concept_ptr(x), concept_ptr(y));
 }
 
 /**
  * The any_interface constructor.
- * Calculates the support type for the interface, and the concept and model
+ * Calculates the support type for the interface, and the vtbl and model
  * types for it.
  */
 template <typename AnyOptions> struct any_interface_t {
   using tags = typename AnyOptions::tags;
-  using concept = any_concept<AnyOptions>;
-  template <typename T> using model = any_model<std::decay_t<T>, concept>;
-  using support_type = interface_t_support<concept, model, any_t<AnyOptions>>;
+  using vtbl = any_concept<AnyOptions>;
+  template <typename T> using model = any_model<std::decay_t<T>, vtbl>;
+  using support_type = interface_t_support<vtbl, model, any_t<AnyOptions>>;
   using type = typename support_type::interface_type;
 };
 template <typename AnyOptions>
@@ -1103,7 +1102,7 @@ void swap(any<AnyOptions> &x, any<AnyOptions> &y) {
   swap((base &)x, (base &)y);
 }
 
-template <typename AnyOptions> bool empty(any_t<AnyOptions> const &x) {
+template <typename AnyOptions> auto empty(any_t<AnyOptions> const &x) -> bool {
   return concept_ptr(x) == nullptr;
 }
 
@@ -1119,7 +1118,7 @@ template <typename AnyOptions> bool empty(any_t<AnyOptions> const &x) {
  */
 template <typename Model, typename T, typename U>
 auto make_model(buffer_t storage, T &&x, std::true_type, U)
-    -> m_concept<Model> * {
+    -> m_vtbl<Model> * {
   using std::forward;
   using model = Model;
 
@@ -1130,7 +1129,7 @@ auto make_model(buffer_t storage, T &&x, std::true_type, U)
 }
 template <typename Model, typename T>
 auto make_model(buffer_t storage, T &&x, std::false_type, std::true_type)
-    -> m_concept<Model> * {
+    -> m_vtbl<Model> * {
   using model = Model;
 
   assert(reinterpret_cast<std::intptr_t>(storage.data) % alignof(model) == 0);
@@ -1142,14 +1141,14 @@ auto make_model(buffer_t storage, T &&x, std::false_type, std::true_type)
 }
 template <typename Model, typename T>
 auto make_model(buffer_t storage, T &&x, std::false_type, std::false_type)
-    -> m_concept<Model> * {
+    -> m_vtbl<Model> * {
   static_assert(!std::is_same<Model, Model>{},
                 "To be move-assignable, a type needs to either "
                 "be move constructible or "
                 "default constructible.");
 }
 template <typename Model, typename T>
-auto make_model(buffer_t storage, T &&x) -> m_concept<Model> * {
+auto make_model(buffer_t storage, T &&x) -> m_vtbl<Model> * {
   return make_model<Model>(storage, std::forward<T>(x),
                            std::is_move_constructible<T>{},
                            std::is_default_constructible<T>{});
@@ -1168,17 +1167,17 @@ template <typename... Tags, typename T> auto make_any(T &&x) -> any<Tags...> {
 }
 
 template <typename T, typename AnyOptions>
-T const *target(any_t<AnyOptions> const &x) {
+auto target(any_t<AnyOptions> const &x) -> T const * {
   using cast_to = ifc_model<decltype(x), T>;
   auto const impl_p = dynamic_cast<cast_to const *>(concept_ptr(x));
   return impl_p ? impl_p->get() : nullptr;
 }
-template <typename T, typename AnyOptions> T *target(any_t<AnyOptions> &x) {
+template <typename T, typename AnyOptions> auto target(any_t<AnyOptions> &x) -> T * {
   auto const &const_x = x;
   return const_cast<T *>(target<T const>(const_x));
 }
 template <typename T, typename AnyOptions>
-std::type_info const &target_type(any_t<AnyOptions> const &x) {
+auto target_type(any_t<AnyOptions> const &x) -> std::type_info const & {
   auto const pc = concept_ptr(x);
   return pc ? pc->get_target_type() : typeid(void);
 }
@@ -1202,7 +1201,7 @@ struct feature {
  * MOVE_CONSTRUCTIBLE
  * ***********************************************************/
 struct move_constructible : feature {
-  template <typename C> struct concept : C {
+  template <typename C> struct vtbl : C {
     virtual void move_construct_in(buffer_t buf) = 0;
     virtual void allocate_and_move_construct_in(m_storage<C> & buf) = 0;
   };
@@ -1225,12 +1224,12 @@ struct move_constructible : feature {
  * MOVE ASSIGNABLE
  * ***********************************************************/
 struct move_assignable : feature {
-  template <typename C> struct concept : C {
-    virtual void move_assign(m_concept<C> &&) = 0;
+  template <typename C> struct vtbl : C {
+    virtual void move_assign(m_vtbl<C> &&) = 0;
   };
 
   template <typename M> struct model : M {
-    void move_assign(m_concept<M> &&y) override final {
+    void move_assign(m_vtbl<M> &&y) override final {
       M::value() = std::move(M::self_cast(y).value());
     }
   };
@@ -1244,7 +1243,7 @@ struct move_assignable : feature {
  * COPYABLE
  * ***********************************************************/
 struct copy_constructible : feature {
-  template <typename C> struct concept : C {
+  template <typename C> struct vtbl : C {
     virtual void copy_construct_in(buffer_t) const = 0;
     virtual void allocate_and_copy_construct_in(m_storage<C> &) const = 0;
   };
@@ -1269,13 +1268,13 @@ struct copy_constructible : feature {
  * COPY_ASSIGNABLE
  * ***********************************************************/
 struct copy_assignable : feature {
-  template <typename C> struct concept : C {
-    virtual void copy_assign(m_concept<C> const &x) = 0;
+  template <typename C> struct vtbl : C {
+    virtual void copy_assign(m_vtbl<C> const &x) = 0;
   };
 
   template <typename M> struct model : M {
     // precondition: y is of model_type.
-    void copy_assign(m_concept<M> const &y) override final {
+    void copy_assign(m_vtbl<M> const &y) override final {
       *M::self().get() = *M::self_cast(y).get();
     }
   };
@@ -1289,13 +1288,13 @@ struct copy_assignable : feature {
  * SWAPPABLE
  * ***************************************************************/
 struct swappable : feature {
-  template <typename C> struct concept : C {
-    virtual void swap(m_concept<C> & y) noexcept = 0;
+  template <typename C> struct vtbl : C {
+    virtual void swap(m_vtbl<C> & y) noexcept = 0;
   };
 
   template <typename M> struct model : M {
     // precondition: same type, ensured by swappable_interface
-    void swap(m_concept<M> &y) noexcept override final {
+    void swap(m_vtbl<M> &y) noexcept override final {
       using std::swap;
       swap(M::value(), M::self_cast(y).value());
     }
@@ -1325,57 +1324,49 @@ using movable = typelist<move_constructible, move_assignable>;
 using copyable = typelist<copy_constructible, copy_assignable>;
 
 namespace debug {
-template <typename Options> std::size_t model_size(any_t<Options> const &x) {
+template <typename Options> auto model_size(any_t<Options> const &x) -> std::size_t {
   auto const pc = concept_ptr(x);
   return pc ? pc->sizeof_alignof().size : 0;
 }
 } // namespace debug
 
-} // namespace _1
+template <typename Feature>
+struct tag_t final {
+};
+
+template <typename Feature>
+inline constexpr tag_t<Feature> tag = {};
+
 // ################# END IMPLEMENTATION, BEGIN PUBLIC INTERFACE SYNOPSIS #######
 
 namespace feature_support {
-using _1::concept_ptr;
-using _1::feature;
-using _1::ifc;
-using _1::ifc_any_type;
-using _1::ifc_concept;
-using _1::ifc_concept_ptr;
-using _1::ifc_interface;
-using _1::ifc_model;
-using _1::ifc_self_cast;
-using _1::m_concept;
-using _1::m_model;
-using _1::m_storage;
-using _1::m_value;
-using _1::typelist;
+using erasure::concept_ptr;
+using erasure::feature;
+using erasure::ifc;
+using erasure::ifc_any_type;
+using erasure::ifc_concept;
+using erasure::ifc_concept_ptr;
+using erasure::ifc_interface;
+using erasure::ifc_model;
+using erasure::ifc_self_cast;
+using erasure::m_vtbl;
+using erasure::m_model;
+using erasure::m_storage;
+using erasure::m_value;
+using meta::typelist;
 } // namespace feature_support
-
-// import all the names that the library exports
-
-// the any type constructor
-using _1::any;
-using _1::make_any;
-using _1::make_any_like;
-
-// the member access functions
-using _1::empty;
-using _1::target;
-using _1::target_type;
 
 namespace features {
 // type tags implementation
-using _1::buffer_size;
-using _1::copy_assignable;
-using _1::copy_constructible;
-using _1::move_assignable;
-using _1::move_constructible;
-using _1::swappable;
+using erasure::buffer_size;
+using erasure::copy_assignable;
+using erasure::copy_constructible;
+using erasure::move_assignable;
+using erasure::move_constructible;
+using erasure::swappable;
 // type tag sets implementation
-using _1::copyable;
-using _1::movable;
+using erasure::copyable;
+using erasure::movable;
 } // namespace features
-
-namespace debug = _1::debug;
 
 } /* namespace erasure */

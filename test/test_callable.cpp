@@ -19,16 +19,16 @@
 
 #include "erasure/erasure.hpp"
 
-#include <memory>
-#include <tuple>
 #include <cassert>
 #include <functional>
+#include <memory>
+#include <tuple>
 
 struct can_const_call {
   int operator()() const { return 1; }
   int operator()(int) const { return 2; }
 
-  friend bool operator==(can_const_call const&, can_const_call const&) {
+  friend bool operator==(can_const_call const &, can_const_call const &) {
     return true;
   }
 };
@@ -38,22 +38,20 @@ struct can_mutably_call {
   int operator()() { return ++x; }
   int operator()(int) { return --x; }
 
-  friend bool operator==(can_mutably_call const&, can_mutably_call const&) {
+  friend bool operator==(can_mutably_call const &, can_mutably_call const &) {
     return true;
   }
 };
 
 void test_const_callable() {
-  using erasure::features::regular;
-  using erasure::features::callable;
-  using erasure::features::copyable;
-  using erasure::features::buffer_size;
   using erasure::make_any;
   using erasure::make_any_like;
+  using erasure::features::buffer_size;
+  using erasure::features::callable;
+  using erasure::features::copyable;
+  using erasure::features::regular;
 
-  auto x = make_any<regular,
-                    callable<int()>,
-                    callable<int(int)>,
+  auto x = make_any<regular, callable<int() const>, callable<int(int) const>,
                     buffer_size<8 + 8>>(can_const_call{});
   assert(x() == 1);
   assert(x(1) == 2);
@@ -63,15 +61,12 @@ void test_const_callable() {
 }
 
 void test_mutably_callable() {
-  using erasure::features::regular;
-  using erasure::features::mutably_callable;
   using erasure::make_any;
+  using erasure::features::callable;
+  using erasure::features::regular;
 
-  auto x =
-      make_any<regular,
-               mutably_callable<int()>,
-               mutably_callable<int(int)>>(
-          can_mutably_call{});
+  auto x = make_any<regular, callable<int()>, callable<int(int)>>(
+      can_mutably_call{});
   assert(x() == 1);
   assert(x() == 2);
   assert(x() == 3);

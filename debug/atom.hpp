@@ -22,9 +22,9 @@
 
 template <typename Tag>
 struct atom {
-  friend bool operator==(atom const&, atom const&) { return true; }
-  friend bool operator<(atom const&, atom const&) { return false; }
-  friend std::ostream& operator<<(std::ostream& o, atom const& x) {
+  friend auto operator==(atom const&, atom const&) -> bool { return true; }
+  friend auto operator<(atom const&, atom const&) -> bool { return false; }
+  friend auto operator<<(std::ostream& o, atom const& x) -> std::ostream& {
     return o << typeid(x).name();
   }
 };

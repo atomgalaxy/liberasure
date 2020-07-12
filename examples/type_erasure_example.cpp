@@ -15,7 +15,7 @@
  */
 
 #include "erasure/feature/callable.hpp"
-#include "erasure/feature/dereferencable.hpp"
+#include "erasure/feature/dereferenceable.hpp"
 #include "erasure/feature/less_than_comparable.hpp"
 #include "erasure/feature/ostreamable.hpp"
 #include "erasure/feature/regular.hpp"

@@ -65,9 +65,9 @@ struct small_buffer {
   ~small_buffer() { reset(); }
 
   small_buffer(small_buffer const&) = delete; // noncopyable
-  small_buffer& operator=(small_buffer const&) = delete; // not copy assignable
+  auto operator=(small_buffer const&) -> small_buffer& = delete; // not copy assignable
   small_buffer(small_buffer&& x) = delete; // nonmovable
-  small_buffer& operator=(small_buffer&& x) = delete; // not move assignable
+  auto operator=(small_buffer&& x) -> small_buffer& = delete; // not move assignable
 
   void reset() {
     if (!empty() && !is_internal()) {
@@ -76,8 +76,8 @@ struct small_buffer {
     ptr = nullptr;
   }
 
-  char* get() { return ptr; }
-  char const* get() const { return ptr; }
+  auto get() -> char* { return ptr; }
+  auto get() const -> char const* { return ptr; }
 
   auto empty() const -> bool { return ptr == nullptr; }
 
@@ -103,12 +103,12 @@ struct small_buffer {
 
   operator bool () const { return !empty(); }
 
-  char& operator*() { return *ptr; }
-  char const& operator*() const { return *ptr; }
-  char* operator->() { return ptr; }
-  char const* operator->() const { return ptr; }
+  auto operator*() -> char& { return *ptr; }
+  auto operator*() const -> char const& { return *ptr; }
+  auto operator->() -> char* { return ptr; }
+  auto operator->() const -> char const* { return ptr; }
 
-  friend bool swap_if_not_internal(small_buffer& x, small_buffer& y) {
+  friend auto swap_if_not_internal(small_buffer& x, small_buffer& y) -> bool {
     using std::swap;
     if (x.is_internal() || y.is_internal()) { return false; }
     swap(x.ptr, y.ptr);
@@ -132,9 +132,9 @@ struct small_buffer<0> {
   small_buffer() : ptr{nullptr} {}
 
   small_buffer(small_buffer const&) = delete; // noncopyable
-  small_buffer& operator=(small_buffer const&) = delete; // not copy assignable
+  auto operator=(small_buffer const&) -> small_buffer& = delete; // not copy assignable
   small_buffer(small_buffer&& x) = delete; // nonmovable
-  small_buffer& operator=(small_buffer&& x) = delete; // not move assignable
+  auto operator=(small_buffer&& x) -> small_buffer& = delete; // not move assignable
 
   ~small_buffer() {
     reset();
@@ -147,8 +147,8 @@ struct small_buffer<0> {
     ptr = nullptr;
   }
 
-  char* get() { return ptr; }
-  char const* get() const { return ptr; }
+  auto get() -> char* { return ptr; }
+  auto get() const -> char const* { return ptr; }
 
   auto empty() const -> bool { return ptr == nullptr; }
 
@@ -164,7 +164,7 @@ struct small_buffer<0> {
     return false;
   }
 
-  friend bool swap_if_not_internal(small_buffer& x, small_buffer& y) {
+  friend auto swap_if_not_internal(small_buffer& x, small_buffer& y) -> bool {
     using std::swap;
     swap(x.ptr, y.ptr);
     return true;
@@ -172,10 +172,10 @@ struct small_buffer<0> {
 
   operator bool () const { return !empty(); }
 
-  char& operator*() { return *ptr; }
-  char const& operator*() const { return *ptr; }
-  char* operator->() { return ptr; }
-  char const* operator->() const { return ptr; }
+  auto operator*() -> char& { return *ptr; }
+  auto operator*() const -> char const& { return *ptr; }
+  auto operator->() -> char* { return ptr; }
+  auto operator->() const -> char const* { return ptr; }
 
 private:
   owner<char*> ptr;

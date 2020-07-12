@@ -110,9 +110,9 @@ struct small_buffer {
     assert(empty());
     auto const aligned_start = align<U>(buf_start());
     auto const aligned_end =
-        ubuf::bit_cast<intptr_t>(aligned_start) + sizeof(U);
+        ubuf::bit_cast<uintptr_t>(aligned_start) + sizeof(U);
     if (aligned_end <=
-        ubuf::bit_cast<intptr_t>(buf_end())) { // fits inside buffer_
+        ubuf::bit_cast<uintptr_t>(buf_end())) { // fits inside buffer_
       ptr = static_cast<void *>(aligned_start);
     } else {
       auto buf = ubuf::allocate<U>();

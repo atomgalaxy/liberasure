@@ -21,24 +21,20 @@
 namespace erasure {
 namespace features {
 
-namespace detail {
-
-namespace fs = erasure::feature_support;
-
 /** The weak-ordering version of less-than comparable. */
 struct less_than_comparable : feature_support::feature {
 
   template <typename C>
   struct vtbl : C {
     using C::erase;
-    virtual auto erase(tag_t<less_than_comparable>, fs::vtbl<C> const &) const
-        -> bool = 0;
+    virtual auto erase(tag_t<less_than_comparable>,
+                       erasure::vtbl<C> const &) const -> bool = 0;
   };
 
   template <typename M>
   struct model : M {
     using M::erase;
-    auto erase(tag_t<less_than_comparable>, fs::vtbl<M> const &y) const
+    auto erase(tag_t<less_than_comparable>, erasure::vtbl<M> const &y) const
         -> bool final {
       auto const &a = erasure::value(*this);
       auto const &b = erasure::value(erasure::self_cast(*this, y));
@@ -70,9 +66,6 @@ struct less_than_comparable : feature_support::feature {
     }
   };
 };
-
-} // namespace detail
-using detail::less_than_comparable;
 
 } // namespace features
 } // namespace erasure

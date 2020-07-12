@@ -41,7 +41,7 @@ struct less_than_comparable : feature_support::feature {
     auto erase(tag_t<less_than_comparable>, fs::m_vtbl<M> const &y) const
         -> bool final {
       auto const &a = erasure::value(*this);
-      auto const &b = erasure::value(M::self_cast(y));
+      auto const &b = erasure::value(erasure::self_cast(*this, y));
       return a < b;
     }
   };

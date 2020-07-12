@@ -483,6 +483,25 @@ constexpr inline struct value_t final {
   }
 } value;
 } // namespace value_impl
+inline namespace self_cast_impl {
+constexpr inline struct self_cast_t final {
+  template <typename Self, typename Other>
+  [[gnu::always_inline]] friend inline auto
+  tag_invoke(erasure::self_cast_t, Self &&, Other &&y) noexcept
+      -> meta::copy_cvref_t<Other &&, m_model<Self>> {
+    return static_cast<meta::copy_cvref_t<Other &&, m_model<Self>>>(y);
+  }
+
+  template <typename Self, typename Other>
+  [[gnu::always_inline]] inline auto operator()(Self &&model,
+                                                Other &&other) const noexcept
+      -> decltype(tag_invoke(std::declval<self_cast_t>(), (Self &&) model,
+                             (Other &&) other)) {
+    assert(erasure::same_dynamic_type(&model, &other) && "precondition");
+    return tag_invoke(self_cast_t{}, (Self &&) model, (Other &&) other);
+  }
+} self_cast;
+} // namespace self_cast_impl
 
 /**
  * In the end, provide a few useful typedefs and self(), and inherit from
@@ -492,14 +511,7 @@ template <typename Value, typename Model, typename Concept>
 struct model_base : Concept {
   friend erasure::self_t;
   friend erasure::value_t;
-
-  auto self_cast(m_vtbl<Concept> &y) const -> m_model<model_base> & {
-    return dynamic_cast<m_model<model_base> &>(y);
-  }
-  auto self_cast(m_vtbl<Concept> const &y) const
-      -> m_model<model_base> const & {
-    return dynamic_cast<m_model<model_base> const &>(y);
-  }
+  friend erasure::self_cast_t;
 
   // dynamic queries
   auto erase(tag_t<sizeof_alignof>) const -> ubuf::buffer_spec final {
@@ -1003,6 +1015,7 @@ void reset(Interface &x) {
     buffer_ref(x).reset();
   }
 }
+
 template <typename AO>
 auto same_dynamic_type(any_t<AO> const &x, any_t<AO> const &y) -> bool {
   return same_dynamic_type(erasure::concept_ptr(x), erasure::concept_ptr(y));
@@ -1280,7 +1293,8 @@ struct move_assignable : feature {
   struct model : M {
     using M::erase;
     void erase(tag_t<move_assignable>, m_vtbl<M> &&y) final {
-      erasure::value(*this) = erasure::value(std::move(M::self_cast(y)));
+      erasure::value(*this) =
+          erasure::value(erasure::self_cast(*this, std::move(y)));
     }
   };
 
@@ -1332,7 +1346,7 @@ struct copy_assignable : feature {
     using M::erase;
     // precondition: y is of model_type.
     void erase(tag_t<copy_assignable>, m_vtbl<M> const &y) final {
-      erasure::value(*this) = erasure::value(M::self_cast(y));
+      erasure::value(*this) = erasure::value(erasure::self_cast(*this, y));
     }
   };
 
@@ -1356,7 +1370,7 @@ struct swappable : feature {
     // precondition: same type, ensured by swappable_interface
     void erase(tag_t<swappable>, m_vtbl<M> &y) noexcept final {
       using std::swap;
-      swap(erasure::value(*this), erasure::value(M::self_cast(y)));
+      swap(erasure::value(*this), erasure::value(erasure::self_cast(*this, y)));
     }
   };
 

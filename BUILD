@@ -9,7 +9,6 @@ cc_library(
         "include/erasure/feature/ostreamable.hpp",
         "include/erasure/feature/regular.hpp",
         "include/erasure/feature/value_equality_comparable.hpp",
-        "include/erasure/feature/visitable.hpp",
         "include/erasure/meta.hpp",
         "include/erasure/small_buffer.hpp",
     ],

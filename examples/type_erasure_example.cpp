@@ -15,29 +15,29 @@
  */
 
 #include "erasure/feature/callable.hpp"
-#include "erasure/feature/ostreamable.hpp"
-#include "erasure/feature/less_than_comparable.hpp"
 #include "erasure/feature/dereferencable.hpp"
+#include "erasure/feature/less_than_comparable.hpp"
+#include "erasure/feature/ostreamable.hpp"
 #include "erasure/feature/regular.hpp"
 #include "erasure/feature/value_equality_comparable.hpp"
 
-#include "erasure/erasure.hpp"
-#include "debug/unique_string.hpp"
 #include "debug/atom.hpp"
 #include "debug/instrumented.hpp"
+#include "debug/unique_string.hpp"
+#include "erasure/erasure.hpp"
 
+#include <cassert>
+#include <cstdlib>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <sstream>
-#include <functional>
-#include <cassert>
-#include <cstdlib>
 
 int main() {
   using namespace erasure;
   using namespace erasure::features;
-  using dbg_util::make_instrumented;
   using dbg_util::instrumented;
+  using dbg_util::make_instrumented;
 
   { // test making a regular with make_any
     auto x = make_any<regular>(5);
@@ -72,7 +72,7 @@ int main() {
           make_tuple(0, -1, operation::VALUE_CONSTRUCTION));
     }
 
-    assert(x == x);  // equals works
+    assert(x == x); // equals works
     { ASSERT_AND_CLEAR_TRACE_IS(make_tuple(0, 0, operation::EQUALS)); }
 
     auto y = make_instrumented(std::string("abcd"));
@@ -80,7 +80,7 @@ int main() {
       ASSERT_AND_CLEAR_TRACE_IS(
           make_tuple(1, -1, operation::VALUE_CONSTRUCTION));
     }
-    assert(y == y);  // equals on strings works
+    assert(y == y); // equals on strings works
     { ASSERT_AND_CLEAR_TRACE_IS(make_tuple(1, 1, operation::EQUALS)); }
 
     any<regular> rx = make_any<regular>(x);
@@ -92,17 +92,16 @@ int main() {
     std::cerr << "rx is int: " << (target<decltype(x)>(rx) ? "true" : "false")
               << "\n";
     assert(target<decltype(x)>(rx));
-    assert(rx == rx);  // rx's equals works
+    assert(rx == rx); // rx's equals works
     std::cerr << "sizeof rx: " << sizeof(rx) << "\n";
-    std::cerr << "sizeof *rx.value: " << erasure::debug::model_size(rx)
-              << "\n";
+    std::cerr << "sizeof *rx.value: " << erasure::debug::model_size(rx) << "\n";
     std::cerr << "rx is string: "
               << (target<decltype(y)>(rx) ? "true" : "false") << "\n";
     assert(!target<decltype(y)>(rx));
 
     std::cerr << "constructing ry from 'abcd'\n";
     auto ry = make_any<regular>(y);
-    assert(ry == ry);  // ry's equals works
+    assert(ry == ry); // ry's equals works
     std::cerr << "ry is int: " << (target<decltype(x)>(ry) ? "true" : "false")
               << "\n";
     assert(!target<decltype(x)>(ry));
@@ -147,9 +146,11 @@ int main() {
   {
     // movable
     std::cerr << "Creating p1\n";
-    auto p1 = make_instrumented(unique_string{std::make_unique<std::string>("p1")});
+    auto p1 =
+        make_instrumented(unique_string{std::make_unique<std::string>("p1")});
     std::cerr << "Creating p2\n";
-    auto p2 = make_instrumented(unique_string{std::make_unique<std::string>("p2")});
+    auto p2 =
+        make_instrumented(unique_string{std::make_unique<std::string>("p2")});
     std::cerr << "Creating movable m1 from p1\n";
     auto m1 = make_any<movable>(std::move(p1));
     std::cerr << "Move-constructing m2 from p2.\n";
@@ -173,9 +174,9 @@ int main() {
   {
     int i = 0;
     auto f = make_any<function<void()>>([pi = &i]() { ++*pi; });
-    auto f1 = make_any<callable<void()>,
-                       move_constructible,
-                       copy_constructible>([pi = &i]() { ++*pi; });
+    auto f1 =
+        make_any<callable<void()>, move_constructible, copy_constructible>(
+            [pi = &i]() { ++*pi; });
     f();
     assert(i == 1);
     std::cerr << "sizeof f: " << sizeof(f) << "\n";
@@ -187,12 +188,12 @@ int main() {
     auto y = make_any<swappable, move_constructible, movable>(
         make_instrumented(std::string("Swappable 2")));
     auto z = make_any<swappable, move_constructible, movable>(
-        std::string("Swappable 3"));  // different type
+        std::string("Swappable 3")); // different type
     auto w =
         make_any<swappable, move_constructible, movable>(make_instrumented(78));
     auto r = make_any<swappable, move_constructible, movable>(
         make_instrumented(79ul));
-    swap(x, y);  // should use ADL swap
+    swap(x, y); // should use ADL swap
     swap(x, z); // should use pointer-based swap
     swap(z, w); // should use non-internal swap
     swap(r, z); // should use std::swap.
@@ -206,11 +207,9 @@ int main() {
     auto y = make_any<move_constructible, movable>(
         make_instrumented(std::string("Swappable 5")));
     auto z = make_any<move_constructible, movable>(
-        std::string("Swappable 6"));  // different type
-    auto w =
-        make_any<move_constructible, movable>(make_instrumented(80));
-    auto r =
-        make_any<move_constructible, movable>(make_instrumented(81ul));
+        std::string("Swappable 6")); // different type
+    auto w = make_any<move_constructible, movable>(make_instrumented(80));
+    auto r = make_any<move_constructible, movable>(make_instrumented(81ul));
 
     swap(x, y); // should use ADL swap
     swap(x, z); // should use pointer-based swap
@@ -220,7 +219,8 @@ int main() {
 
   {
     auto x = make_any<regular, ostreamable, buffer_size<16>>(5);
-    auto y = make_any<regular, ostreamable, buffer_size<16>>(std::string("foo"));
+    auto y =
+        make_any<regular, ostreamable, buffer_size<16>>(std::string("foo"));
     std::stringstream ss;
     ss << x << ' ' << y << '\n';
     x = y;
@@ -237,36 +237,12 @@ int main() {
     assert(y >= x);
   }
 
-#if 0
   {
     unique_string x{std::make_unique<std::string>("foo")};
     auto const y = make_any<regular, features::ostreamable>(std::ref(x));
-    x = y; // these alias
 
     std::stringstream ss;
     ss << y << '\n';
     assert(ss.str() == "foo\n");
   }
-#endif
-
-  /*
-  {
-    using a = atom<struct a_tag>;
-    using b = atom<struct b_tag>;
-    using const_visitable_by_ab =
-        erasure::features::visitable<int(meta::typelist<a, b> const&)>;
-    auto x = make_any<regular, const_visitable_by_ab>(a{});
-    auto y = make_any<regular, const_visitable_by_ab>(b{});
-    struct f_multifunction {
-      template <typename T>
-      int operator()(T const& x) {
-        std::cerr << x << "\n";
-        return 5;
-      }
-    };
-    auto f = const_visitable_by_ab::make_visitor(f_multifunction{});
-    assert(f(x) == 5);
-    assert(f(y) == 5);
-  }
-  */
 }

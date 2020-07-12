@@ -41,3 +41,6 @@ add_executable(test_callable test_callable.cpp)
 target_link_libraries(test_callable erasure)
 add_test(NAME test_callable COMMAND test_callable)
 
+add_executable(test_minimal test_minimal.cpp)
+target_link_libraries(test_minimal erasure)
+add_test(NAME test_minimal COMMAND test_minimal)

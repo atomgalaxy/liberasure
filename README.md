@@ -1,19 +1,15 @@
-liberasure
-==========
+erasure
+=======
+
 [![Build Status](https://travis-ci.org/atomgalaxy/liberasure.svg?branch=master)](https://travis-ci.org/atomgalaxy/liberasure)
 
 A no-dependencies C++ extensible type erasure library
 
-To be done: repackage
----------------------
+Basic Usage
+-----------
 
-Hi, dear everyone who wants to use this library. I consider it to be quite
-mature - but it does need one thing, and that is packaging.
 
-It needs to be separated out from all the lecture code and unrelated examples,
-and just packaged up to be useful. I'll update this readme after this happens.
 
-I'm happy to take pull requests.
 
 LICENSE
 -------

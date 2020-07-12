@@ -443,13 +443,6 @@ using chain_concepts =
     compose_feature_groups_t<link_concepts, compose_models_t,
                              typename AnyOptions::feature_groups,
                              concept_base<Concept, AnyOptions>>;
-#if 0
-template <typename Concept, typename AnyOptions>
-using chain_concepts =
-    multiply_inherit_all<meta::map_t<link_concepts,
-                                     typename AnyOptions::tags,
-                                     concept_base<Concept, AnyOptions>>>;
-#endif
 
 /* ****************************************************************
  * type function: concept
@@ -509,12 +502,6 @@ using chain_models =
     compose_feature_groups_t<link_models, compose_models_t,
                              typename Concept::options::feature_groups,
                              model_base<Value, Model, Concept>>;
-#if 0
-template <typename Value, typename Model, typename Concept>
-using chain_models = chain_t<link_models,
-                             typename Concept::options::tags,
-                             model_base<Value, Model, Concept>>;
-#endif
 
 /** SUPPORT FOR std::reference_wrapper */
 template <typename Value> struct reference_type {

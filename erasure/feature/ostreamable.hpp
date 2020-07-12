@@ -27,23 +27,26 @@ struct ostreamable : feature_support::feature {
   template <typename C>
   struct vtbl : C {
     using C::erase;
-    virtual auto erase(tag_t<ostreamable>, std::ostream&) const -> std::ostream& = 0;
+    virtual auto erase(tag_t<ostreamable>, std::ostream &) const
+        -> std::ostream & = 0;
   };
   template <typename M>
   struct model : M {
     using M::erase;
-    virtual auto erase(tag_t<ostreamable>, std::ostream&o) const -> std::ostream& final {
+    virtual auto erase(tag_t<ostreamable>, std::ostream &o) const
+        -> std::ostream & final {
       return o << M::self().value();
     }
   };
   template <typename I>
   struct interface : I {
-    friend auto operator<<(
-        std::ostream& o, feature_support::ifc_any_type<I> const& x) -> std::ostream& {
-      return concept_ptr(x)->erase(tag<ostreamable>, o);
+    friend auto operator<<(std::ostream &o,
+                           feature_support::ifc_any_type<I> const &x)
+        -> std::ostream & {
+      return erasure::call<ostreamable>(x, o);
     }
   };
 };
 
-}  // features
-}  // erasure
+} // namespace features
+} // namespace erasure

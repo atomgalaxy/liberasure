@@ -22,18 +22,18 @@
 #include <tuple>
 
 int main() {
-  using erasure::features::move_constructible;
-  using erasure::features::move_assignable;
-  using erasure::features::movable;
-  using erasure::features::copyable;
-  using erasure::features::copy_constructible;
   using erasure::features::copy_assignable;
+  using erasure::features::copy_constructible;
+  using erasure::features::copyable;
+  using erasure::features::movable;
+  using erasure::features::move_assignable;
+  using erasure::features::move_constructible;
 
-  using erasure::make_any;
-  using std::make_unique;
-  using std::make_tuple;
   using dbg_util::instrumented;
   using erasure::any;
+  using erasure::make_any;
+  using std::make_tuple;
+  using std::make_unique;
 
   {
     // movable does not require copyable
@@ -82,8 +82,7 @@ int main() {
     ASSERT_AND_CLEAR_TRACE_IS(
         make_tuple(0, -1, dbg_util::operation::VALUE_CONSTRUCTION),
         make_tuple(1, 0, dbg_util::operation::MOVE_CONSTRUCTION),
-        make_tuple(0, -1, dbg_util::operation::DESTRUCTION)
-        );
+        make_tuple(0, -1, dbg_util::operation::DESTRUCTION));
     decltype(x) y;
 #ifdef NOCOMPILE_MOVABLE_TEST
     // requires move-assignment, should not compile

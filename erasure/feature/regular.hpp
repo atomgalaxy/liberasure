@@ -24,4 +24,4 @@ namespace features {
 using regular =
     feature_support::typelist<movable, copyable, equality_comparable>;
 }
-}
+} // namespace erasure

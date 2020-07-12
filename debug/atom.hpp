@@ -16,15 +16,15 @@
 
 #pragma once
 
-#include <sstream>
 #include <ostream>
+#include <sstream>
 #include <string>
 
 template <typename Tag>
 struct atom {
-  friend auto operator==(atom const&, atom const&) -> bool { return true; }
-  friend auto operator<(atom const&, atom const&) -> bool { return false; }
-  friend auto operator<<(std::ostream& o, atom const& x) -> std::ostream& {
+  friend auto operator==(atom const &, atom const &) -> bool { return true; }
+  friend auto operator<(atom const &, atom const &) -> bool { return false; }
+  friend auto operator<<(std::ostream &o, atom const &x) -> std::ostream & {
     return o << typeid(x).name();
   }
 };

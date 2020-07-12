@@ -16,19 +16,38 @@
 
 #pragma once
 
-#include <cstdint>
 #include <array>
+#include <bit>
 #include <cassert>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <type_traits>
 
 namespace erasure {
 
 namespace ubuf {
 
+template <class To, class From>
+auto bit_cast(const From &src) noexcept
+    -> std::enable_if_t<sizeof(To) == sizeof(From) &&
+                            std::is_trivially_copyable_v<From> &&
+                            std::is_trivially_copyable_v<To>,
+                        To> {
+  static_assert(std::is_trivially_constructible_v<To>,
+                "This implementation additionally requires destination type to "
+                "be trivially constructible");
+
+  To dst;
+  std::memcpy(&dst, &src, sizeof(To));
+  return dst;
+}
+
 template <typename T>
 using owner = T;
 
 struct buffer_t {
-  char* data;
+  void *data;
   std::size_t size;
 };
 
@@ -39,21 +58,24 @@ struct buffer_spec {
 
 template <typename T>
 auto allocate() -> buffer_t {
-  using storage_type = std::aligned_storage_t<sizeof(T), alignof(T)>;
-  return {reinterpret_cast<char*>(new storage_type()), sizeof(storage_type)};
+  auto *addr = malloc(sizeof(T));
+  assert((ubuf::bit_cast<intptr_t>(addr) % alignof(T) == 0) && "Unsupported.");
+  return {addr, sizeof(T)};
 }
+
+void deallocate(void *addr) { free(addr); }
 
 /**
  * Get the next multiple of alignment.
  */
 template <typename T>
-auto align(char* buf_start) -> char* {
-  auto start = reinterpret_cast<uintptr_t>(buf_start);
+auto align(void *buf_start) -> void * {
+  auto start = ubuf::bit_cast<uintptr_t>(buf_start);
   auto misalignment = start % alignof(T);
   if (misalignment == 0) {
-    return reinterpret_cast<char*>(start);
+    return ubuf::bit_cast<void *>(start);
   } else {
-    return reinterpret_cast<char*>(start + (alignof(T) - misalignment));
+    return ubuf::bit_cast<void *>(start + (alignof(T) - misalignment));
   }
 }
 
@@ -64,20 +86,22 @@ struct small_buffer {
   small_buffer() : ptr{nullptr} {}
   ~small_buffer() { reset(); }
 
-  small_buffer(small_buffer const&) = delete; // noncopyable
-  auto operator=(small_buffer const&) -> small_buffer& = delete; // not copy assignable
-  small_buffer(small_buffer&& x) = delete; // nonmovable
-  auto operator=(small_buffer&& x) -> small_buffer& = delete; // not move assignable
+  small_buffer(small_buffer const &) = delete; // noncopyable
+  auto operator=(small_buffer const &)
+      -> small_buffer & = delete;          // not copy assignable
+  small_buffer(small_buffer &&x) = delete; // nonmovable
+  auto operator=(small_buffer &&x)
+      -> small_buffer & = delete; // not move assignable
 
   void reset() {
     if (!empty() && !is_internal()) {
-      delete ptr;
+      ubuf::deallocate(ptr);
     }
     ptr = nullptr;
   }
 
-  auto get() -> char* { return ptr; }
-  auto get() const -> char const* { return ptr; }
+  auto get() -> void * { return ptr; }
+  auto get() const -> void const * { return ptr; }
 
   auto empty() const -> bool { return ptr == nullptr; }
 
@@ -85,9 +109,11 @@ struct small_buffer {
   auto allocate() -> buffer_t {
     assert(empty());
     auto const aligned_start = align<U>(buf_start());
-    auto const aligned_end = aligned_start + sizeof(U);
-    if (aligned_end <= buf_end()) { // fits inside buffer_
-      ptr = aligned_start;
+    auto const aligned_end =
+        ubuf::bit_cast<intptr_t>(aligned_start) + sizeof(U);
+    if (aligned_end <=
+        ubuf::bit_cast<intptr_t>(buf_end())) { // fits inside buffer_
+      ptr = static_cast<void *>(aligned_start);
     } else {
       auto buf = ubuf::allocate<U>();
       ptr = buf.data;
@@ -97,31 +123,30 @@ struct small_buffer {
 
   auto is_internal() const -> bool {
     assert(!empty());
-    auto const cptr = reinterpret_cast<char*>(ptr);
+    auto const cptr = static_cast<char *>(ptr);
     return buf_start() <= cptr && cptr < buf_end();
   }
 
-  operator bool () const { return !empty(); }
+  operator bool() const { return !empty(); }
 
-  auto operator*() -> char& { return *ptr; }
-  auto operator*() const -> char const& { return *ptr; }
-  auto operator->() -> char* { return ptr; }
-  auto operator->() const -> char const* { return ptr; }
-
-  friend auto swap_if_not_internal(small_buffer& x, small_buffer& y) -> bool {
+  friend auto swap_if_not_internal(small_buffer &x, small_buffer &y) -> bool {
     using std::swap;
-    if (x.is_internal() || y.is_internal()) { return false; }
+    if (x.is_internal() || y.is_internal()) {
+      return false;
+    }
     swap(x.ptr, y.ptr);
     return true;
   }
 
 private:
-  auto buf_start() -> char* { return buffer_.data(); }
-  auto buf_end() -> char* { return buffer_.data() + buffer_.size(); }
-  auto buf_start() const -> char const* { return buffer_.data(); }
-  auto buf_end() const -> char const* { return buffer_.data() + buffer_.size(); }
+  auto buf_start() -> char * { return buffer_.data(); }
+  auto buf_end() -> char * { return buffer_.data() + buffer_.size(); }
+  auto buf_start() const -> char const * { return buffer_.data(); }
+  auto buf_end() const -> char const * {
+    return buffer_.data() + buffer_.size();
+  }
 
-  owner<char*> ptr;
+  owner<void *> ptr;
   buffer_type buffer_;
 };
 
@@ -131,24 +156,24 @@ struct small_buffer<0> {
 
   small_buffer() : ptr{nullptr} {}
 
-  small_buffer(small_buffer const&) = delete; // noncopyable
-  auto operator=(small_buffer const&) -> small_buffer& = delete; // not copy assignable
-  small_buffer(small_buffer&& x) = delete; // nonmovable
-  auto operator=(small_buffer&& x) -> small_buffer& = delete; // not move assignable
+  small_buffer(small_buffer const &) = delete; // noncopyable
+  auto operator=(small_buffer const &)
+      -> small_buffer & = delete;          // not copy assignable
+  small_buffer(small_buffer &&x) = delete; // nonmovable
+  auto operator=(small_buffer &&x)
+      -> small_buffer & = delete; // not move assignable
 
-  ~small_buffer() {
-    reset();
-  }
+  ~small_buffer() { reset(); }
 
   void reset() {
     if (!empty()) {
-      delete ptr;
+      ubuf::deallocate(ptr);
     }
     ptr = nullptr;
   }
 
-  auto get() -> char* { return ptr; }
-  auto get() const -> char const* { return ptr; }
+  auto get() -> void * { return ptr; }
+  auto get() const -> void * { return ptr; }
 
   auto empty() const -> bool { return ptr == nullptr; }
 
@@ -164,23 +189,18 @@ struct small_buffer<0> {
     return false;
   }
 
-  friend auto swap_if_not_internal(small_buffer& x, small_buffer& y) -> bool {
+  friend auto swap_if_not_internal(small_buffer &x, small_buffer &y) -> bool {
     using std::swap;
     swap(x.ptr, y.ptr);
     return true;
   }
 
-  operator bool () const { return !empty(); }
-
-  auto operator*() -> char& { return *ptr; }
-  auto operator*() const -> char const& { return *ptr; }
-  auto operator->() -> char* { return ptr; }
-  auto operator->() const -> char const* { return ptr; }
+  operator bool() const { return !empty(); }
 
 private:
-  owner<char*> ptr;
+  owner<void *> ptr;
 };
 
-}
+} // namespace ubuf
 
-}
+} // namespace erasure

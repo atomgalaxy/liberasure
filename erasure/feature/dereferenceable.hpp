@@ -48,7 +48,7 @@ struct dereference_tag {
     struct interface : I {                                                     \
       auto operator*() constness -> ReturnType {                               \
         namespace f = erasure::feature_support;                                \
-        return erasure::call<name>(*this);           \
+        return erasure::call<name>(*this);                                     \
       }                                                                        \
     };                                                                         \
   };                                                                           \

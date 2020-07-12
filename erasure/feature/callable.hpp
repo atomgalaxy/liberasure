@@ -60,7 +60,7 @@ struct callable;
     struct interface : I {                                                     \
       auto operator()(Args... args) constness -> Return {                      \
         namespace f = feature_support;                                         \
-        return call<callable>(*this, (Args &&) args...);                       \
+        return erasure::call<callable>(*this, (Args)args...);                  \
       }                                                                        \
     };                                                                         \
   }

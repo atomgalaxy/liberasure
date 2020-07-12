@@ -139,8 +139,8 @@
  *       // use the features in here, as shown
  *     };
  *
- * `m_vtbl<C>` is the full vtbl type. References and const references to
- * `m_vtbl<C>` should be taken by your interface functions. It is the full
+ * `vtbl<C>` is the full vtbl type. References and const references to
+ * `vtbl<C>` should be taken by your interface functions. It is the full
  * 'name' of the abstract class that my_concept is part of.
  *
  * `m_storage<C>` is the storage type that the underlying model uses. You
@@ -167,7 +167,7 @@
  * `M::self()` is the `*this` pointer, cast to the type of `m_model<M>`, and is
  * a reference to it. Use it instead of `*this` in the methods you write.
  *
- * `M::self_cast(m_vtbl<M> const& y)` casts a reference to a vtbl you
+ * `M::self_cast(vtbl<M> const& y)` casts a reference to a vtbl you
  * received as a function parameter to the type of the model. Use it for
  * methods that their interface only forwards their own type. Comes in a
  * non-const version too.
@@ -195,7 +195,7 @@
  *
  * `ifc_interface< I >` is the full interface type.
  *
- * `ifc_any_type< I >` is the base any_t type.
+ * `erasure::ifc< I >` is the base any_t type.
  *
  * `ifc_concept< I >` is the vtbl type.
  *
@@ -207,7 +207,7 @@
  * `ifc_concept< I * >&`. You will need this to dispatch the call from the
  * interface method to the implementation method in the model.  Use as
  * `ifc_concept_ptr(*this)->my_method(...)`. A sister method is
- * `concept_ptr(ifc_any_type< I >&)`, but you can only use that one with
+ * `concept_ptr(erasure::ifc< I >&)`, but you can only use that one with
  * correctly typed arguments.
  *
  * `ifc_self_cast(*this)`, with `this` being an interface implementation, gives
@@ -397,7 +397,7 @@ using concept_traits_t = concept_traits<std::remove_reference_t<decltype(
     ::erasure::concept_base_type(std::declval<T &>()))>>;
 
 template <typename BaseModel>
-using m_vtbl = typename concept_traits_t<BaseModel>::concept_type;
+using vtbl = typename concept_traits_t<BaseModel>::concept_type;
 template <typename BaseModel>
 using m_storage = typename concept_traits_t<BaseModel>::storage_type;
 
@@ -474,7 +474,7 @@ constexpr inline struct value_t final {
   [[gnu::always_inline]] friend inline auto tag_invoke(erasure::value_t,
                                                        Self &&x) noexcept
       -> meta::copy_cvref_t<Self &&, m_value<Self>> {
-    return erasure::self((Self &&) x).value();
+    return erasure::self((Self &&) x)._value;
   }
   template <typename Self>
   [[gnu::always_inline]] inline auto operator()(Self &&model) const noexcept
@@ -557,6 +557,7 @@ struct reference_type<std::reference_wrapper<Value>> {
  * ******************************************************************/
 template <typename Value, typename Concept>
 struct model_t : chain_models<Value, model_t<Value, Concept>, Concept> {
+  friend erasure::value_t;
   // repeat base type...
   static_assert(std::is_same<m_value<model_t>, Value>(),
                 "chain_models bug: incorrect chaining of value_type.");
@@ -564,13 +565,6 @@ struct model_t : chain_models<Value, model_t<Value, Concept>, Concept> {
   model_t() {}
   model_t(Value &&x) : _value(std::move(x)) {}
   model_t(Value const &x) : _value(x) {}
-
-  auto value() & -> Value & { return _value; }
-  auto value() const & -> Value const & { return _value; }
-  auto value() && -> Value && { return std::forward<model_t &&>(*this)._value; }
-  auto value() const && -> Value const && {
-    return std::forward<model_t const &&>(*this)._value;
-  }
 
   Value _value;
 };
@@ -597,22 +591,23 @@ constexpr auto interface_support_type(interface_base<InterfaceTraits> const &)
 
 // prevent clashes
 template <typename T>
-using ifc = decltype(::erasure::interface_support_type(std::declval<T>()));
+using interface_traits_t =
+    decltype(::erasure::interface_support_type(std::declval<T>()));
 
 template <typename T>
-using ifc_interface = typename ifc<T>::interface_type;
+using ifc_interface = typename interface_traits_t<T>::interface_type;
 template <typename T, typename V>
-using ifc_model = typename ifc<T>::template model_type<V>;
+using ifc_model = typename interface_traits_t<T>::template model_type<V>;
 template <typename T>
-using ifc_concept = typename ifc<T>::concept_type;
+using ifc_concept = typename interface_traits_t<T>::concept_type;
 template <typename T>
-using ifc_tags = typename ifc<T>::tags;
+using ifc_tags = typename interface_traits_t<T>::tags;
 template <typename T>
-using ifc_any_type = typename ifc<T>::any_type;
+using ifc = typename interface_traits_t<T>::any_type;
 
 template <typename T>
 decltype(auto) ifc_self_cast(T &&x) {
-  return meta::forward_cast<ifc_any_type<T>>((T &&) x);
+  return meta::forward_cast<erasure::ifc<T>>((T &&) x);
 }
 template <typename Interface>
 auto concept_ptr(Interface &&x) -> auto *;
@@ -1173,7 +1168,7 @@ auto empty(any_t<AnyOptions> const &x) -> bool {
  */
 template <typename Model, typename T, typename U>
 auto make_model(ubuf::buffer_t storage, T &&x, std::true_type, U)
-    -> m_vtbl<Model> * {
+    -> vtbl<Model> * {
   using std::forward;
   using model = Model;
 
@@ -1184,7 +1179,7 @@ auto make_model(ubuf::buffer_t storage, T &&x, std::true_type, U)
 }
 template <typename Model, typename T>
 auto make_model(ubuf::buffer_t storage, T &&x, std::false_type, std::true_type)
-    -> m_vtbl<Model> * {
+    -> vtbl<Model> * {
   using model = Model;
 
   assert(reinterpret_cast<std::intptr_t>(storage.data) % alignof(model) == 0);
@@ -1196,14 +1191,14 @@ auto make_model(ubuf::buffer_t storage, T &&x, std::false_type, std::true_type)
 }
 template <typename Model, typename T>
 auto make_model(ubuf::buffer_t storage, T &&x, std::false_type, std::false_type)
-    -> m_vtbl<Model> * {
+    -> vtbl<Model> * {
   static_assert(!std::is_same<Model, Model>{},
                 "To be move-assignable, a type needs to either "
                 "be move constructible or "
                 "default constructible.");
 }
 template <typename Model, typename T>
-auto make_model(ubuf::buffer_t storage, T &&x) -> m_vtbl<Model> * {
+auto make_model(ubuf::buffer_t storage, T &&x) -> vtbl<Model> * {
   return make_model<Model>(storage, std::forward<T>(x),
                            std::is_move_constructible<T>{},
                            std::is_default_constructible<T>{});
@@ -1286,13 +1281,13 @@ struct move_assignable : feature {
   template <typename C>
   struct vtbl : C {
     using C::erase;
-    virtual void erase(tag_t<move_assignable>, m_vtbl<C> &&) = 0;
+    virtual void erase(tag_t<move_assignable>, erasure::vtbl<C> &&) = 0;
   };
 
   template <typename M>
   struct model : M {
     using M::erase;
-    void erase(tag_t<move_assignable>, m_vtbl<M> &&y) final {
+    void erase(tag_t<move_assignable>, erasure::vtbl<M> &&y) final {
       erasure::value(*this) =
           erasure::value(erasure::self_cast(*this, std::move(y)));
     }
@@ -1338,14 +1333,14 @@ struct copy_assignable : feature {
   template <typename C>
   struct vtbl : C {
     using C::erase;
-    virtual void erase(tag_t<copy_assignable>, m_vtbl<C> const &x) = 0;
+    virtual void erase(tag_t<copy_assignable>, erasure::vtbl<C> const &x) = 0;
   };
 
   template <typename M>
   struct model : M {
     using M::erase;
     // precondition: y is of model_type.
-    void erase(tag_t<copy_assignable>, m_vtbl<M> const &y) final {
+    void erase(tag_t<copy_assignable>, erasure::vtbl<M> const &y) final {
       erasure::value(*this) = erasure::value(erasure::self_cast(*this, y));
     }
   };
@@ -1361,14 +1356,14 @@ struct swappable : feature {
   template <typename C>
   struct vtbl : C {
     using C::erase;
-    virtual void erase(tag_t<swappable>, m_vtbl<C> &y) noexcept = 0;
+    virtual void erase(tag_t<swappable>, erasure::vtbl<C> &y) noexcept = 0;
   };
 
   template <typename M>
   struct model : M {
     using M::erase;
     // precondition: same type, ensured by swappable_interface
-    void erase(tag_t<swappable>, m_vtbl<M> &y) noexcept final {
+    void erase(tag_t<swappable>, erasure::vtbl<M> &y) noexcept final {
       using std::swap;
       swap(erasure::value(*this), erasure::value(erasure::self_cast(*this, y)));
     }
@@ -1376,7 +1371,7 @@ struct swappable : feature {
 
   template <typename I>
   struct interface : I {
-    friend void swap(ifc_any_type<I> &x, ifc_any_type<I> &y) noexcept {
+    friend void swap(erasure::ifc<I> &x, erasure::ifc<I> &y) noexcept {
       if (same_dynamic_type(x, y)) {
         erasure::call<swappable>(x, *erasure::concept_ptr(y));
       } else {
@@ -1413,16 +1408,16 @@ namespace feature_support {
 using erasure::concept_ptr;
 using erasure::feature;
 using erasure::ifc;
-using erasure::ifc_any_type;
 using erasure::ifc_concept;
 using erasure::ifc_concept_ptr;
 using erasure::ifc_interface;
 using erasure::ifc_model;
 using erasure::ifc_self_cast;
+using erasure::interface_traits_t;
 using erasure::m_model;
 using erasure::m_storage;
 using erasure::m_value;
-using erasure::m_vtbl;
+using erasure::vtbl;
 using meta::typelist;
 } // namespace feature_support
 

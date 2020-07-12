@@ -26,7 +26,7 @@ struct equality_comparable : feature_support::feature {
   struct vtbl : C {
     using C::erase;
     virtual auto erase(erasure::tag_t<equality_comparable>,
-                       feature_support::m_vtbl<C> const &y) const -> bool = 0;
+                       erasure::vtbl<C> const &y) const -> bool = 0;
   };
 
   template <typename M>
@@ -34,7 +34,7 @@ struct equality_comparable : feature_support::feature {
     using M::erase;
     // precondition: same type, ensured by interface
     auto erase(erasure::tag_t<equality_comparable>,
-               feature_support::m_vtbl<M> const &y) const -> bool final {
+               erasure::vtbl<M> const &y) const -> bool final {
       auto const &a = erasure::value(*this);
       auto const &b = erasure::value(erasure::self_cast(*this, y));
       return a == b;
@@ -43,16 +43,16 @@ struct equality_comparable : feature_support::feature {
 
   template <typename I>
   struct interface : I {
-    friend auto operator==(feature_support::ifc_any_type<I> const &x,
-                           feature_support::ifc_any_type<I> const &y) -> bool {
+    friend auto operator==(erasure::ifc<I> const &x, erasure::ifc<I> const &y)
+        -> bool {
       if (same_dynamic_type(x, y)) {
         return erasure::call<equality_comparable>(x, *erasure::concept_ptr(y));
       } else {
         return false;
       }
     }
-    friend auto operator!=(feature_support::ifc_any_type<I> const &x,
-                           feature_support::ifc_any_type<I> const &y) -> bool {
+    friend auto operator!=(erasure::ifc<I> const &x, erasure::ifc<I> const &y)
+        -> bool {
       return !(x == y);
     }
   };

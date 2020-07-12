@@ -32,20 +32,20 @@ struct value_equality_comparable : feature_support::feature {
 
   template <typename I>
   struct interface : I {
-    friend auto operator==(f::ifc_any_type<I> const &x, T const &y) -> bool {
+    friend auto operator==(erasure::ifc<I> const &x, T const &y) -> bool {
       if (auto ptr = target<T>(x)) {
         return *ptr == y;
       } else {
         return false;
       }
     }
-    friend auto operator==(T const &x, f::ifc_any_type<I> const &y) -> bool {
+    friend auto operator==(T const &x, erasure::ifc<I> const &y) -> bool {
       return y == x;
     }
-    friend auto operator!=(f::ifc_any_type<I> const &x, T const &y) -> bool {
+    friend auto operator!=(erasure::ifc<I> const &x, T const &y) -> bool {
       return !(x == y);
     }
-    friend auto operator!=(T const &x, f::ifc_any_type<I> const &y) -> bool {
+    friend auto operator!=(T const &x, erasure::ifc<I> const &y) -> bool {
       return !(x == y);
     }
   };

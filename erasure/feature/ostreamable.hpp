@@ -40,8 +40,7 @@ struct ostreamable : feature_support::feature {
   };
   template <typename I>
   struct interface : I {
-    friend auto operator<<(std::ostream &o,
-                           feature_support::ifc_any_type<I> const &x)
+    friend auto operator<<(std::ostream &o, erasure::ifc<I> const &x)
         -> std::ostream & {
       return erasure::call<ostreamable>(x, o);
     }

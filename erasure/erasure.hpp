@@ -275,14 +275,6 @@ struct chainable_concept_check {
   typealias x;
 };
 
-template <typename Typelist>
-struct multiply_inherit_all {
-  static_assert(!std::is_same<Typelist, Typelist>{},
-                "Needs a typelist to make sense.");
-};
-template <typename... Bases>
-struct multiply_inherit_all<meta::typelist<Bases...>> : Bases... {};
-
 template <template <typename, typename> class Link, typename Features,
           typename ChainBase>
 struct chain {
@@ -294,18 +286,6 @@ struct chain {
 template <template <typename, typename> class Link, typename Features,
           typename ChainBase>
 using chain_t = typename chain<Link, Features, ChainBase>::type;
-
-template <template <typename, typename> class Link, typename Features,
-          typename ChainBase>
-struct multiply_inherit {
-  template <typename X>
-  using assert_concept = chainable_concept_check<Link, ChainBase, X>;
-  using assert_concepts = meta::map_t<assert_concept, Features>;
-  using type = multiply_inherit_all<meta::map_t<Link, Features, ChainBase>>;
-};
-template <template <typename, typename> class Link, typename Features,
-          typename ChainBase>
-using multiply_inherit_t = typename chain<Link, Features, ChainBase>::type;
 
 template <typename Features>
 struct feature_group {

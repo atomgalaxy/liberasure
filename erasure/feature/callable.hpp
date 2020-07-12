@@ -52,7 +52,7 @@ struct callable;
       using M::erase;                                                          \
       auto erase(erasure::tag_t<callable>, Args... args) constness             \
           -> Return final {                                                    \
-        return erasure::value(std::forward<M constness>(*this))(args...);                                            \
+        return erasure::value(std::forward<M constness>(*this))(args...);      \
       }                                                                        \
     };                                                                         \
                                                                                \

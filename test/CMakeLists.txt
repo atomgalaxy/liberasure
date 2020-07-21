@@ -31,10 +31,10 @@ assert_build_fails(
   DEFINITIONS
   NOCOMPILE_MOVABLE_TEST)
 
-# dereferencable test
-add_executable(test_dereferencable test_dereferencable.cpp)
-target_link_libraries(test_dereferencable erasure)
-add_test(NAME test_dereferencable COMMAND test_dereferencable)
+# dereferenceable test
+add_executable(test_dereferenceable test_dereferenceable.cpp)
+target_link_libraries(test_dereferenceable erasure)
+add_test(NAME test_dereferenceable COMMAND test_dereferenceable)
 
 # callable test
 add_executable(test_callable test_callable.cpp)

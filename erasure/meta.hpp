@@ -26,9 +26,11 @@ namespace meta {
  * Basic type for storing lists of types.
  */
 template <typename... Ts>
-struct typelist { };
+struct typelist {};
 template <typename... Ts>
-typelist<Ts...> constexpr make_typelist(Ts...) { return {}; }
+auto constexpr make_typelist(Ts...) -> typelist<Ts...> {
+  return {};
+}
 template <typename... Ts, typename... Us>
 constexpr auto operator==(typelist<Ts...> x, typelist<Us...> y) {
   return std::integral_constant<bool,
@@ -61,7 +63,9 @@ struct type_ {
   using type = T;
 
   template <typename U, typename V>
-  friend auto operator|(type_<U>, type_<V>) -> typelist<U, V> { return {}; };
+  friend auto operator|(type_<U>, type_<V>) -> typelist<U, V> {
+    return {};
+  };
   template <typename U, typename V>
   friend constexpr auto operator==(type_<U>, type_<V>) {
     return _t<std::is_same<T, U>>{};
@@ -81,8 +85,7 @@ struct or_
 };
 
 /** not_ */ template <typename T>
-struct not_ : std::integral_constant<bool, !T{}>{};
-
+struct not_ : std::integral_constant<bool, !T{}> {};
 
 /** plus */
 template <typename T, typename U>
@@ -124,7 +127,6 @@ struct compose {
   using vararg = type<Args...>;
 };
 
-
 /** cons */
 template <typename T, typename Typelist>
 struct cons {
@@ -136,7 +138,7 @@ template <typename T, typename... Ts>
 struct cons<T, typelist<Ts...>> {
   using type = typelist<T, Ts...>;
 };
-template <typename T, typename Typelist=typelist<>>
+template <typename T, typename Typelist = typelist<>>
 using cons_t = _t<cons<T, Typelist>>;
 
 /** pair constructor */
@@ -182,7 +184,6 @@ struct take_1<typelist<>> {
 template <typename Typelist>
 using take_1_t = _t<take_1<Typelist>>;
 
-
 /** concatenate */
 template <typename... Typelists>
 struct concatenate;
@@ -201,7 +202,6 @@ struct concatenate<typelist<Ts1...>, typelist<Ts2...>, Typelists...> {
 };
 template <typename... Typelists>
 using concatenate_t = _t<concatenate<Typelists...>>;
-
 
 /** flatten. */
 template <typename T>
@@ -236,21 +236,17 @@ using join_t = _t<join<Typelist>>;
 /**
  * Map:
  */
-template <template <typename...> class F,
-          typename Typelist,
+template <template <typename...> class F, typename Typelist,
           typename... ExtraArgs>
 struct map {
   // print what this is, because it's evidently not a typelist
   static auto const this_should_be_a_typelist = print_type<Typelist>;
 };
-template <template <typename...> class F,
-          typename... Ts,
-          typename... ExtraArgs>
+template <template <typename...> class F, typename... Ts, typename... ExtraArgs>
 struct map<F, typelist<Ts...>, ExtraArgs...> {
   using type = typelist<F<Ts, ExtraArgs...>...>;
 };
-template <template <typename...> class F,
-          typename Typelist,
+template <template <typename...> class F, typename Typelist,
           typename... ExtraArgs>
 using map_t = _t<map<F, Typelist, ExtraArgs...>>;
 
@@ -265,7 +261,7 @@ struct make_index_sequence {
   struct helper;
   template <std::size_t... Is>
   struct helper<std::index_sequence<Is...>> {
-      using type = typelist<size_t_<Is>...>;
+    using type = typelist<size_t_<Is>...>;
   };
 
   using type = typename helper<seq>::type;
@@ -278,8 +274,7 @@ using make_index_sequence_t = _t<make_index_sequence<N>>;
  *
  * foldl(f, acc, (a, b, c))
  */
-template <template <typename, typename> class BinaryF,
-          typename Acc,
+template <template <typename, typename> class BinaryF, typename Acc,
           typename Typelist>
 struct foldl {
   static auto Typelist_is_this = print_type<Typelist>;
@@ -290,16 +285,13 @@ template <template <typename, typename> class BinaryF, typename Acc>
 struct foldl<BinaryF, Acc, typelist<>> {
   using type = Acc;
 };
-template <template <typename, typename> class BinaryF,
-          typename Acc,
-          typename T,
+template <template <typename, typename> class BinaryF, typename Acc, typename T,
           typename... Rest>
 struct foldl<BinaryF, Acc, typelist<T, Rest...>> {
   using r_type = BinaryF<Acc, T>;
   using type = _t<foldl<BinaryF, r_type, typelist<Rest...>>>;
 };
-template <template <typename, typename> class BinaryF,
-          typename Acc,
+template <template <typename, typename> class BinaryF, typename Acc,
           typename Typelist>
 using foldl_t = _t<foldl<BinaryF, Acc, Typelist>>;
 static_assert(foldl_t<pair_t, char, typelist<short, int, long>>{} ==
@@ -307,24 +299,20 @@ static_assert(foldl_t<pair_t, char, typelist<short, int, long>>{} ==
               "foldl unit test");
 
 /** foldr */
-template <template <typename, typename> class BinaryF,
-          typename Typelist,
+template <template <typename, typename> class BinaryF, typename Typelist,
           typename Acc>
 struct foldr;
 template <template <typename, typename> class BinaryF, typename Acc>
 struct foldr<BinaryF, typelist<>, Acc> {
   using type = Acc;
 };
-template <template <typename, typename> class BinaryF,
-          typename T,
-          typename... Rest,
-          typename Acc>
+template <template <typename, typename> class BinaryF, typename T,
+          typename... Rest, typename Acc>
 struct foldr<BinaryF, typelist<T, Rest...>, Acc> {
   using r_type = _t<foldr<BinaryF, typelist<Rest...>, Acc>>;
   using type = BinaryF<T, r_type>;
 };
-template <template <typename, typename> class BinaryF,
-          typename Typelist,
+template <template <typename, typename> class BinaryF, typename Typelist,
           typename Acc>
 using foldr_t = _t<foldr<BinaryF, Typelist, Acc>>;
 
@@ -334,19 +322,15 @@ static_assert(foldr_t<pair_t, typelist<char, short, int>, long>{} ==
 static_assert(type_<foldr_t<pair_t, typelist<>, long>>{} == type_<long>{},
               "foldr unit test");
 
-template <template <typename...> class NaryPredicate,
-          typename Typelist,
+template <template <typename...> class NaryPredicate, typename Typelist,
           typename... PredicateParams>
 struct copy_if {
   template <typename T>
-  using predicate =
-      std::conditional_t<NaryPredicate<T, PredicateParams...>{},
-                         typelist<T>,
-                         typelist<>>;
+  using predicate = std::conditional_t<NaryPredicate<T, PredicateParams...>{},
+                                       typelist<T>, typelist<>>;
   using type = join_t<map_t<predicate, Typelist>>;
 };
-template <template <typename...> class NaryPredicate,
-          typename Typelist,
+template <template <typename...> class NaryPredicate, typename Typelist,
           typename... PredicateParams>
 using copy_if_t = _t<copy_if<NaryPredicate, Typelist, PredicateParams...>>;
 
@@ -369,46 +353,37 @@ static_assert(copy_if_t<false_predicate, typelist<long, int>>{} == typelist<>{},
 static_assert(copy_if_t<compose<not_, is_same>::type, typelist<int>, int>{} ==
                   typelist<>{},
               "");
-static_assert(
-    copy_if_t<compose<not_, is_same>::type, typelist<long>, int>{} ==
-        typelist<long>{},
-    "");
+static_assert(copy_if_t<compose<not_, is_same>::type, typelist<long>, int>{} ==
+                  typelist<long>{},
+              "");
 
 /** copy if not */
-template <template <typename...> class NaryPredicate,
-          typename Typelist,
+template <template <typename...> class NaryPredicate, typename Typelist,
           typename... PredicateParams>
 using copy_if_not_t = copy_if_t<compose<not_, NaryPredicate>::template type,
-                                Typelist,
-                                PredicateParams...>;
-template <template <typename...> class NaryPredicate,
-          typename Typelist,
+                                Typelist, PredicateParams...>;
+template <template <typename...> class NaryPredicate, typename Typelist,
           typename... PredicateParams>
 using copy_if_not =
     type_<copy_if_not_t<NaryPredicate, Typelist, PredicateParams...>>;
 
 /** find_first */
-template <template <typename...> class NaryPredicate,
-          typename Typelist,
+template <template <typename...> class NaryPredicate, typename Typelist,
           typename... PredicateParams>
 using find_first_t =
     head_t<copy_if_t<NaryPredicate, Typelist, PredicateParams...>>;
-template <template <typename...> class NaryPredicate,
-          typename Typelist,
+template <template <typename...> class NaryPredicate, typename Typelist,
           typename... PredicateParams>
 using find_first =
     type_<find_first_t<NaryPredicate, Typelist, PredicateParams...>>;
 
 /** find_first_not */
-template <template <typename...> class NaryPredicate,
-          typename Typelist,
+template <template <typename...> class NaryPredicate, typename Typelist,
           typename... PredicateParams>
 using find_first_not_t =
-    find_first_t<compose<not_, NaryPredicate>::template type,
-                 Typelist,
+    find_first_t<compose<not_, NaryPredicate>::template type, Typelist,
                  PredicateParams...>;
-template <template <typename...> class NaryPredicate,
-          typename Typelist,
+template <template <typename...> class NaryPredicate, typename Typelist,
           typename... PredicateParams>
 using find_first_not =
     type_<find_first_not_t<NaryPredicate, Typelist, PredicateParams...>>;
@@ -419,8 +394,7 @@ struct unique {
   template <typename Result, typename T>
   using include_if_not_in =
       std::conditional_t<typelist<>{} == copy_if_t<Equals, Result, T>{},
-                         concatenate_t<Result, typelist<T>>,
-                         Result>;
+                         concatenate_t<Result, typelist<T>>, Result>;
 
   using type = foldl_t<include_if_not_in, typelist<>, Typelist>;
 };
@@ -511,7 +485,6 @@ using all_t = foldl_t<and_, std::true_type, map_t<Predicate, Typelist>>;
 template <template <typename> class Predicate, typename Typelist>
 using all = type_<all_t<Predicate, Typelist>>;
 
-
 template <template <typename, typename> class Equals, typename Typelist>
 struct group_by;
 template <template <typename, typename> class Equals, typename... Ts>
@@ -561,12 +534,10 @@ struct product<typelist<Ts...>> {
 template <typename... Ts, typename... Us, typename... Typelists>
 struct product<typelist<Ts...>, typelist<Us...>, Typelists...> {
   template <typename PairOfListAndT>
-  using unpack = concatenate_t<head_t<PairOfListAndT>,
-                               tail_t<PairOfListAndT>>;
+  using unpack = concatenate_t<head_t<PairOfListAndT>, tail_t<PairOfListAndT>>;
   template <typename TL1, typename TL2>
   using produce = map_t<unpack, product_2_t<TL1, TL2>>;
-  using type = foldl_t<produce,
-                       product_2_t<typelist<Ts...>, typelist<Us...>>,
+  using type = foldl_t<produce, product_2_t<typelist<Ts...>, typelist<Us...>>,
                        typelist<Typelists...>>;
 };
 template <typename... Typelists>
@@ -587,30 +558,60 @@ static_assert(product_t<typelist<int, long>, typelist<int>>{} ==
 static_assert(product_t<typelist<int>, typelist<int, long>>{} ==
                   typelist<typelist<int, int>, typelist<int, long>>{},
               "");
-static_assert(product_t<typelist<char, short>,
-                        typelist<int, long>,
-                        typelist<float, double>,
-                        typelist<unsigned, unsigned char>>{} ==
-                  typelist<typelist<char, int, float, unsigned>,
-                           typelist<char, int, float, unsigned char>,
-                           typelist<char, int, double, unsigned>,
-                           typelist<char, int, double, unsigned char>,
-                           typelist<char, long, float, unsigned>,
-                           typelist<char, long, float, unsigned char>,
-                           typelist<char, long, double, unsigned>,
-                           typelist<char, long, double, unsigned char>,
-                           typelist<short, int, float, unsigned>,
-                           typelist<short, int, float, unsigned char>,
-                           typelist<short, int, double, unsigned>,
-                           typelist<short, int, double, unsigned char>,
-                           typelist<short, long, float, unsigned>,
-                           typelist<short, long, float, unsigned char>,
-                           typelist<short, long, double, unsigned>,
-                           typelist<short, long, double, unsigned char>>{},
-              "");
+static_assert(
+    product_t<typelist<char, short>, typelist<int, long>,
+              typelist<float, double>, typelist<unsigned, unsigned char>>{} ==
+        typelist<typelist<char, int, float, unsigned>,
+                 typelist<char, int, float, unsigned char>,
+                 typelist<char, int, double, unsigned>,
+                 typelist<char, int, double, unsigned char>,
+                 typelist<char, long, float, unsigned>,
+                 typelist<char, long, float, unsigned char>,
+                 typelist<char, long, double, unsigned>,
+                 typelist<char, long, double, unsigned char>,
+                 typelist<short, int, float, unsigned>,
+                 typelist<short, int, float, unsigned char>,
+                 typelist<short, int, double, unsigned>,
+                 typelist<short, int, double, unsigned char>,
+                 typelist<short, long, float, unsigned>,
+                 typelist<short, long, float, unsigned char>,
+                 typelist<short, long, double, unsigned>,
+                 typelist<short, long, double, unsigned char>>{},
+    "");
 
+template <typename T, typename U>
+using copy_rvref_t = std::conditional_t<std::is_rvalue_reference_v<T>,
+                                        std::add_rvalue_reference_t<U>, U>;
+template <typename T, typename U>
+using copy_lvref_t = std::conditional_t<std::is_lvalue_reference_v<T>,
+                                        std::add_lvalue_reference_t<U>, U>;
+template <typename T, typename U>
+using copy_ref_t = copy_rvref_t<T, copy_lvref_t<T, U>>;
+template <typename T, typename U>
+using copy_const_t =
+    std::conditional_t<std::is_const_v<std::remove_reference_t<T>>,
+                       std::add_const_t<U>, U>;
+template <typename T, typename U>
+using copy_volatile_t =
+    std::conditional_t<std::is_volatile_v<std::remove_reference_t<T>>,
+                       std::add_volatile_t<U>, U>;
+template <typename T, typename U>
+using copy_cvref_t = copy_ref_t<T, copy_const_t<T, copy_volatile_t<T, U>>>;
 
-} // detail
+template <typename T, typename U>
+[[gnu::always_inline]] inline constexpr auto forward_like(U &&x) noexcept
+    -> copy_cvref_t<T, std::remove_reference_t<U>> {
+  return std::forward<copy_cvref_t<T, std::remove_reference_t<U>>>(x);
+}
+
+template <typename T, typename U>
+[[gnu::always_inline]] inline constexpr auto forward_cast(U &&x) noexcept
+    -> copy_cvref_t<U &&, std::remove_cvref_t<T>> {
+  using out_type = copy_cvref_t<U &&, std::remove_cvref_t<T>>;
+  return static_cast<out_type>(x);
+}
+
+} // namespace detail
 
 /** INTERFACE LISTING */
 using detail::compose;
@@ -689,15 +690,20 @@ using detail::product_t;
 
 using detail::and_;
 using detail::false_predicate;
-using detail::true_predicate;
 using detail::is_typelist;
 using detail::minus;
 using detail::not_;
 using detail::or_;
 using detail::plus;
-using detail::is_typelist;
+using detail::true_predicate;
+
+using detail::copy_const_t;
+using detail::copy_cvref_t;
+using detail::copy_ref_t;
+using detail::forward_cast;
+using detail::forward_like;
 
 using detail::print_type;
 
-} // meta
-} // erasure
+} // namespace meta
+} // namespace erasure
